@@ -1,6 +1,6 @@
 # Стек технологий: Convertly
 
-Единый источник правды по технологиям. Продуктовые требования — в [`TZ.md`](./TZ.md).
+Единый источник правды по технологиям. Продуктовые требования — в [`technical-task.md`](./technical-task.md).
 
 Статус: **зафиксирован**.
 
@@ -55,7 +55,7 @@
 | ------------------- | ----------------------------------------------- |
 | NestJS              | Модули, DI, guards, pipes, REST                 |
 | multer (через Nest) | Multipart upload одного файла                   |
-| `@nestjs/throttler` | Rate limit (лимиты — в [`TZ.md`](./TZ.md) §7.6) |
+| `@nestjs/throttler` | Rate limit (лимиты — в [`technical-task.md`](./technical-task.md) §7.6) |
 | cookie + JWT        | Сессия UI в httpOnly cookie                     |
 | argon2              | Хэш паролей                                     |
 | file-type           | MIME / magic bytes                              |
