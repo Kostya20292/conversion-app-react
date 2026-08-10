@@ -1,0 +1,42 @@
+.dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: calc(100vw - 2 * var(--space-margin));
+}
+
+.dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.panel {
+  width: min(440px, 100%);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-overlay);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-on-surface);
+}
+
+.title {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-headline-sm-size);
+  font-weight: var(--text-headline-sm-weight);
+  line-height: var(--text-headline-sm-line);
+}
+
+.body {
+  margin-bottom: var(--space-lg);
+  font-size: var(--text-body-md-size);
+  line-height: var(--text-body-md-line);
+  color: var(--color-on-surface-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}

@@ -1,0 +1,40 @@
+.page {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--space-2xl);
+}
+
+.card {
+  width: min(var(--auth-max), 100%);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-raised);
+}
+
+.title {
+  font-size: var(--text-headline-md-size);
+  font-weight: var(--text-headline-md-weight);
+  line-height: var(--text-headline-md-line);
+  letter-spacing: var(--text-headline-md-tracking);
+}
+
+.lead {
+  margin-top: var(--space-sm);
+  color: var(--color-on-surface-muted);
+  font-size: var(--text-body-md-size);
+  line-height: var(--text-body-md-line);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.footer {
+  margin-top: var(--space-lg);
+  color: var(--color-on-surface-muted);
+  font-size: var(--text-body-sm-size);
+}
