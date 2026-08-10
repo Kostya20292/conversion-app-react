@@ -11,7 +11,8 @@ alwaysApply: false
 | [technical-task.md](../../docs/technical-task.md) | product, entities, screens, API, limits, scenarios |
 | [architecture.md](../../docs/architecture.md) | layers, repo layout, flows, scaling |
 | [tech-stack.md](../../docs/tech-stack.md) | fixed stack (do not propose alternatives unless asked) |
-| [design.md](../../docs/design.md) | visual system and UI tokens |
+| [DESIGN.md](../../docs/DESIGN.md) | visual system and UI tokens |
+| [frontend-implementation-plan.md](../../docs/frontend-implementation-plan.md) | step-by-step frontend delivery plan |
 
 ## Edit rules
 
