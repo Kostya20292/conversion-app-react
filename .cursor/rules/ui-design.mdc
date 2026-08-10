@@ -1,0 +1,30 @@
+---
+description: Convertly UI — dark SaaS, tokens, dropzone-first
+globs: apps/web/**/*.{tsx,scss,css,module.scss}
+alwaysApply: false
+---
+
+# UI / Design System
+
+Source: [design](../../docs/design.md). **Dark theme only** in v1.
+
+## Visual language
+
+- Calm dark SaaS (reference: ILovePDF / Convertio / Smallpdf).
+- Single blue CTA accent: `#4C8DFF` (hover `#6BA0FF`, pressed `#3A78E8`).
+- UI font: **Manrope**; code: **JetBrains Mono**.
+- Screen hero = dropzone + “Конвертировать” CTA, not marketing or illustrations.
+
+## Tokens (CSS variables / SCSS)
+
+- Backgrounds: `neutral` `#0B0F14`, `surface` `#121820`, `surface-raised` `#1A222D`.
+- Text: `on-surface` `#E8EDF5`, muted `#9AA3B5`.
+- Status: success `#3DCF8E`, warning `#E6B84D`, error `#F07178`.
+- Radii: sm 6 / md 10 / lg 14; buttons and inputs — height **44px**.
+
+## UX rules
+
+- One file per operation; explicit job statuses: queued → processing → done / error.
+- UI errors and hints — **in Russian**.
+- No glow, purple gradients, light theme, or extra cards/stat blocks on the home screen.
+- Responsive: desktop + mobile; focus ring = primary.

@@ -1,0 +1,46 @@
+---
+description: Convertly overview — product, monorepo, v1 boundaries
+alwaysApply: true
+---
+
+# Convertly — project overview
+
+File conversion web service. Source of truth:
+
+- [Technical task](../../docs/technical-task.md)
+- [Architecture](../../docs/architecture.md)
+- [Tech stack](../../docs/tech-stack.md)
+- [Design](../../docs/design.md)
+
+## Monorepo
+
+- Package manager: **pnpm only** (no npm/yarn). Details — [stack](../../docs/tech-stack.md) §8.
+- Apps: `apps/web` (React + Vite), `apps/api` (NestJS). Layout — [architecture](../../docs/architecture.md) §3.
+- Shared packages — in `packages/` as needed.
+- On-disk files — `storage/` (uploads/results/profile), **not in git**; client must not access it ([architecture](../../docs/architecture.md) §3.3).
+
+## Conversion model
+
+- One operation = **one file** ([task](../../docs/technical-task.md) §2).
+- Flow: upload → `ConversionJob` (`queued` → `processing` → `completed`/`failed`) → polling → download ([architecture](../../docs/architecture.md) §4.1).
+- Formats v1: JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice) ([stack](../../docs/tech-stack.md) §4).
+- Limits: 10 MB, 60s timeout, rate limits per [task](../../docs/technical-task.md) §7.6.
+
+## Auth
+
+| Channel | Mechanism |
+| ------- | --------- |
+| SPA / account | JWT in httpOnly cookie |
+| Public API `/api/v1/*` | `X-API-Key` |
+| Share `/s/:token` | public token, no login |
+
+## Out of scope v1
+
+Batch conversion, Redis/BullMQ, S3/CDN, live Telegram Bot API, 2FA, Docker Compose for PostgreSQL, horizontal autoscaling — see [architecture](../../docs/architecture.md) §6 and [task](../../docs/technical-task.md) §1.
+
+## Code & DX
+
+- Strict TypeScript; no `any` without reason.
+- Linter: **Oxlint**. Tests: Vitest (unit), Playwright (e2e).
+- UI error messages — **in Russian**.
+- Do not commit `.env`, secrets, or `storage/` contents. Security checklist — [security.mdc](./security.mdc).

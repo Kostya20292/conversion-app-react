@@ -1,0 +1,31 @@
+---
+description: Frontend apps/web conventions — React, structure, API client
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend (`apps/web`)
+
+React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../../docs/tech-stack.md) §2). UI only — conversion runs on the server. Structure — [architecture](../../docs/architecture.md) §3.1. Routes — [task](../../docs/technical-task.md) §4. UI tokens — [design](../../docs/design.md).
+
+## `src/` layout
+
+| Folder | Purpose |
+| ------ | ------- |
+| `app/` | providers, router, layout (Header/Footer) |
+| `pages/` | route screens (`Home`, `Login`, `Account`, `Share`…) |
+| `components/` | reusable UI (Dropzone, JobStatus…) |
+| `features/conversion/` | Zustand: file → upload → poll → result |
+| `api/` | thin Nest fetch wrappers |
+| `styles/` | tokens / reset |
+
+## Rules
+
+- Functional components + `const handleX = ()` for handlers.
+- Job/polling state lives in `features/conversion`, not spread across pages.
+- Poll job status **every 2s** until `completed` / `failed` ([architecture](../../docs/architecture.md) §4.1).
+- Keep conversion business logic out of `api/`; HTTP + error parsing only.
+- Styles — **SCSS Modules** next to the component (`Component.module.scss`), not global CSS for everything.
+- A11y: `aria-label`, keyboard for interactive controls, meaningful `alt` / `role`.
+- React Compiler in use — do not add `useMemo`/`useCallback` unless needed.
+- Tests: Vitest / Playwright ([stack](../../docs/tech-stack.md) §7).

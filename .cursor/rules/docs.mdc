@@ -1,0 +1,22 @@
+---
+description: Convertly docs/ editing conventions
+globs: docs/**/*.md
+alwaysApply: false
+---
+
+# Documentation (`docs/`)
+
+| File | Role |
+| ---- | ---- |
+| [technical-task.md](../../docs/technical-task.md) | product, entities, screens, API, limits, scenarios |
+| [architecture.md](../../docs/architecture.md) | layers, repo layout, flows, scaling |
+| [tech-stack.md](../../docs/tech-stack.md) | fixed stack (do not propose alternatives unless asked) |
+| [design.md](../../docs/design.md) | visual system and UI tokens |
+
+## Edit rules
+
+- Write docs **in Russian**, concise, use tables where useful.
+- Treat stack and v1 boundaries as **fixed**; disputed swaps (Redis, S3, Docker PG) only as “later / option A” in [architecture.md](../../docs/architecture.md) §5, not as the current choice.
+- When changing limits, TTL, formats, or auth — sync [task](../../docs/technical-task.md) ↔ [architecture](../../docs/architecture.md) ↔ [tech-stack](../../docs/tech-stack.md).
+- Do not duplicate long sections across files; link, e.g. `[tech-stack.md](./tech-stack.md)`.
+- Do not describe out-of-scope v1 features as already accepted ([architecture](../../docs/architecture.md) §6).

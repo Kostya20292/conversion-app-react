@@ -1,0 +1,41 @@
+---
+description: Backend apps/api conventions — NestJS, jobs, storage, security
+globs: apps/api/**/*.{ts,js}
+alwaysApply: false
+---
+
+# Backend (`apps/api`)
+
+NestJS + TypeORM + PostgreSQL ([stack](../../docs/tech-stack.md) §3). HTTP, worker, and TTL cron — **one process** (no Redis in v1). Modules & storage — [architecture](../../docs/architecture.md) §3.2–3.3. API & limits — [task](../../docs/technical-task.md) §7.
+
+## Modules
+
+`auth`, `users`, `api-keys`, `jobs`, `files`, `shares`, `conversion`, `storage`, `worker`, `cleanup`, `telegram` (mock), `common`.
+
+## Jobs & files
+
+- `POST` job → validate MIME/size/format pair → file to `storage/uploads/` → `ConversionJob` `queued` → `202 { id, status }` ([architecture](../../docs/architecture.md) §4.1).
+- Worker: `queued` → `processing` → Sharp/LibreOffice → `results/` → `completed` | `failed` ([stack](../../docs/tech-stack.md) §4).
+- Check MIME via **magic bytes** (`file-type`), not extension alone ([task](../../docs/technical-task.md) §2.3).
+- One file per job; max 10 MB; engine timeout 60s ([task](../../docs/technical-task.md) §2.2).
+- No path traversal in `storage`. Serve files **only** via signed download / API key / share-token — never static `storage/` ([architecture](../../docs/architecture.md) §3.3).
+
+## Auth & API
+
+Brief; full security checklist — [security.mdc](./security.mdc).
+
+- `/api/auth/*` — JWT cookie (httpOnly); passwords — **argon2** ([architecture](../../docs/architecture.md) §4.2).
+- `/api/v1/*` — `X-API-Key` (hash + prefix in DB).
+- Rate limit — `@nestjs/throttler` ([task](../../docs/technical-task.md) §7.6).
+- Telegram in v1 — **mock module**, no live Bot API ([stack](../../docs/tech-stack.md) §6).
+
+## TTL (cleanup cron)
+
+| What | TTL |
+| ---- | --- |
+| uploads | until job ends or max 1h |
+| results (non-profile) | 24h |
+| share | 7 days (default) |
+| signed download | 15 min |
+
+Details — [architecture](../../docs/architecture.md) §4.3 and [task](../../docs/technical-task.md) §2.2. If `save_conversions = true` → result to `storage/profile/` + `StoredFile`.

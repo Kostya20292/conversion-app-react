@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+coverage
+playwright-report
+test-results
+storage
+pnpm-lock.yaml
+*.min.js
+*.min.css
+public
+apps/*/public
+.cursor
+.git

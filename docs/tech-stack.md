@@ -1,6 +1,7 @@
 # Стек технологий: Convertly
 
-Единый источник правды по технологиям. Продуктовые требования — в [`technical-task.md`](./technical-task.md).
+Единый источник правды по технологиям. Продуктовые требования — в
+[`technical-task.md`](./technical-task.md).
 
 Статус: **зафиксирован**.
 
@@ -28,7 +29,7 @@
 | Telegram           | Mock-модуль (живой Bot API позже)                        |
 | Unit-тесты         | Vitest                                                   |
 | E2E                | Playwright                                               |
-| DX                 | ESLint + Prettier + **Turborepo** + **pnpm**             |
+| DX                 | **Oxlint** + **Turborepo** + **pnpm**                    |
 | Структура репо     | **Monorepo** (`apps/web`, `apps/api`) + Turborepo        |
 | Package manager    | **pnpm**                                                 |
 
@@ -51,15 +52,15 @@
 
 ## 3. Backend
 
-| Пакет / слой        | Назначение                                      |
-| ------------------- | ----------------------------------------------- |
-| NestJS              | Модули, DI, guards, pipes, REST                 |
-| multer (через Nest) | Multipart upload одного файла                   |
+| Пакет / слой        | Назначение                                                              |
+| ------------------- | ----------------------------------------------------------------------- |
+| NestJS              | Модули, DI, guards, pipes, REST                                         |
+| multer (через Nest) | Multipart upload одного файла                                           |
 | `@nestjs/throttler` | Rate limit (лимиты — в [`technical-task.md`](./technical-task.md) §7.6) |
-| cookie + JWT        | Сессия UI в httpOnly cookie                     |
-| argon2              | Хэш паролей                                     |
-| file-type           | MIME / magic bytes                              |
-| dotenv              | Конфиг                                          |
+| cookie + JWT        | Сессия UI в httpOnly cookie                                             |
+| argon2              | Хэш паролей                                                             |
+| file-type           | MIME / magic bytes                                                      |
+| dotenv              | Конфиг                                                                  |
 
 ---
 
@@ -95,11 +96,11 @@
 
 ## 7. Тесты и качество
 
-| Технология        | Назначение                                                 |
-| ----------------- | ---------------------------------------------------------- |
-| Vitest            | Unit: валидация MIME, лимиты, пары форматов, хэш API-ключа |
-| Playwright        | E2E: convert одного файла, share link, API auth            |
-| ESLint + Prettier | Единый стиль кода                                          |
+| Технология | Назначение                                                 |
+| ---------- | ---------------------------------------------------------- |
+| Vitest     | Unit: валидация MIME, лимиты, пары форматов, хэш API-ключа |
+| Playwright | E2E: convert одного файла, share link, API auth            |
+| Oxlint     | Линтинг JS/TS/React                                        |
 
 ---
 
@@ -114,9 +115,11 @@
 | `packages/` | Общие пакеты при необходимости (типы, eslint…)        |
 | корень      | `pnpm-workspace.yaml`, `turbo.json`, общие DX-скрипты |
 
-Workspaces через **pnpm**. Turborepo оркестрирует `dev` / `build` / `lint` / `test` по приложениям с кэшем задач.
+Workspaces через **pnpm**. Turborepo оркестрирует `dev` / `build` / `lint` / `test` по приложениям с
+кэшем задач.
 
-**Не используем:** npm/yarn как основной менеджер; два отдельных репозитория; monorepo без Turborepo.
+**Не используем:** npm/yarn как основной менеджер; два отдельных репозитория; monorepo без
+Turborepo.
 
 ---
 

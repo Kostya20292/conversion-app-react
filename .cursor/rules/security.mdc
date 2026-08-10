@@ -1,0 +1,59 @@
+---
+description: Convertly security checklist — secrets, auth, upload, API, XSS/CSRF
+alwaysApply: true
+---
+
+# Security (Convertly)
+
+Checklist for auth, upload, API, secrets, and sensitive data. Limits/TTL source — [task](../../docs/technical-task.md) §7.6–7.7.
+
+## Secrets
+
+- Secrets from env only (`JWT_SECRET`, `DATABASE_URL`, …); never hardcode.
+- Do not commit `.env`, keys, or `storage/` contents.
+- Do not log passwords, full API keys, file bodies, or JWTs.
+
+## Auth & access
+
+| Channel | Rule |
+| ------- | ---- |
+| SPA / account | JWT in **httpOnly** cookie (`Secure` + `SameSite` in prod); not `localStorage` |
+| `/api/v1/*` | `X-API-Key`; DB stores **hash + prefix**; plaintext shown once in account UI |
+| Download | signed token only (TTL **15 min**) / owner API key / share-token |
+| Passwords | **argon2**; min 8 chars, letter + digit |
+| Login errors | generic "Неверный email или пароль" (no which-field leak) |
+
+Verify resource ownership (job, file, key) before sensitive operations.
+
+## Upload & storage
+
+- Max **10 MB**; whitelist v1 format pairs (JPG↔PNG, DOCX↔PDF).
+- MIME via **magic bytes** (`file-type`), not only `Content-Type` / extension.
+- No path traversal in `storage/`; never expose `storage/` as static files.
+- Antivirus — out of scope v1.
+
+## Input / ORM / XSS
+
+- Validate DTOs (class-validator / schemas) on all inputs; whitelist, not blacklist.
+- TypeORM / parameterized queries; never concatenate SQL from user input.
+- No `dangerouslySetInnerHTML` without sanitization; prefer React escaping.
+- Cookie session: `SameSite` (+ Nest CSRF strategy if cross-site needed).
+
+## Rate limit (`@nestjs/throttler`)
+
+| Channel | Limit |
+| ------- | ----- |
+| API convert | 30 / h / key |
+| UI convert (guest) | 10 / h / IP |
+| UI convert (user) | 60 / h / user |
+| Login | 10 / 15 min / IP |
+
+## Errors & deps
+
+- Safe client messages (UI copy in Russian); stack/internals only in server logs.
+- CORS — explicit SPA origin allowlist, not `*`.
+- Commit `pnpm-lock.yaml`; run `pnpm audit` on dependency updates.
+
+## Out of scope v1
+
+Do not treat as required: 2FA, Redis rate-store, S3/CDN ACL, live Telegram Bot API, Solana/payments.
