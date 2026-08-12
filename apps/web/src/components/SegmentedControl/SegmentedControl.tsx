@@ -35,6 +35,7 @@ export const SegmentedControl = <T extends string>({
       className={clsx(styles.root, className)}
       role="tablist"
       aria-label={ariaLabel}
+      tabIndex={-1}
       onKeyDown={handleKeyDown}
     >
       {options.map((option) => {

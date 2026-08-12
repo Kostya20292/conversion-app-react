@@ -1,21 +1,85 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc", "import"],
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "import",
+    "jsx-a11y",
+    "promise",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
   "ignorePatterns": [
-    "dist/**",
-    "node_modules/**",
-    "coverage/**",
-    "playwright-report/**",
-    "test-results/**"
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "storage/**"
   ],
   "env": {
     "browser": true,
     "es2024": true
   },
+  "settings": {
+    "react": {
+      "version": "19.2.8",
+      "linkComponents": [
+        { "name": "Link", "linkAttribute": "to" },
+        { "name": "NavLink", "linkAttribute": "to" }
+      ]
+    },
+    "jsx-a11y": {
+      "components": {
+        "Button": "button",
+        "Link": "a",
+        "NavLink": "a"
+      }
+    }
+  },
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "typescript/no-explicit-any": "warn",
-    "import/no-cycle": "error"
-  }
+    "react/no-danger": "error",
+    "react/react-compiler": "warn",
+    "typescript/no-explicit-any": "error",
+    "import/no-cycle": "error",
+    "jsx-a11y/anchor-is-valid": [
+      "error",
+      {
+        "components": ["Link", "NavLink"],
+        "specialLink": ["to"]
+      }
+    ],
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.config.{ts,js,mjs,cjs}",
+        "**/playwright.config.ts",
+        "**/vite.config.ts",
+        "**/vitest.config.ts"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["**/*.{test,spec}.{ts,tsx}"],
+      "env": {
+        "vitest": true
+      },
+      "rules": {
+        "vitest/no-disabled-tests": "warn",
+        "vitest/warn-todo": "warn"
+      }
+    }
+  ]
 }

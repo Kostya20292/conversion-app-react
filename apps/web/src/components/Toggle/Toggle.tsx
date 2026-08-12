@@ -4,7 +4,16 @@ import styles from './Toggle.module.scss';
 
 export type { ToggleProps } from './Toggle.types';
 
-export const Toggle = ({ label, id, description, className, disabled, ...rest }: ToggleProps) => (
+export const Toggle = ({
+  label,
+  id,
+  description,
+  className,
+  disabled,
+  checked,
+  defaultChecked,
+  ...rest
+}: ToggleProps) => (
   <div className={clsx(styles.wrapper, className)}>
     <label className={styles.label} htmlFor={id}>
       <span className={styles.copy}>
@@ -21,6 +30,9 @@ export const Toggle = ({ label, id, description, className, disabled, ...rest }:
         role="switch"
         className={styles.input}
         disabled={disabled}
+        checked={checked}
+        defaultChecked={defaultChecked}
+        aria-checked={checked ?? defaultChecked ?? false}
         aria-describedby={description ? `${id}-description` : undefined}
         {...rest}
       />
