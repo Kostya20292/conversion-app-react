@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { KeyboardEvent } from 'react';
+import { type KeyboardEvent, useRef } from 'react';
 import type { SegmentedControlProps } from './SegmentedControl.types';
 import styles from './SegmentedControl.module.scss';
 
@@ -12,21 +12,30 @@ export const SegmentedControl = <T extends string>({
   ariaLabel,
   className,
 }: SegmentedControlProps<T>) => {
+  const buttonRefs = useRef<Partial<Record<T, HTMLButtonElement | null>>>({});
+
+  const handleSelect = (nextValue: T) => {
+    onChange(nextValue);
+    buttonRefs.current[nextValue]?.focus();
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = options.findIndex((option) => option.value === value);
-    if (currentIndex < 0) return;
+    if (currentIndex < 0) {
+      return;
+    }
 
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
       event.preventDefault();
       const next = options[(currentIndex + 1) % options.length];
-      onChange(next.value);
+      handleSelect(next.value);
       return;
     }
 
     if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
       const prev = options[(currentIndex - 1 + options.length) % options.length];
-      onChange(prev.value);
+      handleSelect(prev.value);
     }
   };
 
@@ -49,7 +58,10 @@ export const SegmentedControl = <T extends string>({
             aria-selected={isActive}
             tabIndex={isActive ? 0 : -1}
             className={clsx(styles.segment, isActive && styles.active)}
-            onClick={() => onChange(option.value)}
+            ref={(node) => {
+              buttonRefs.current[option.value] = node;
+            }}
+            onClick={() => handleSelect(option.value)}
           >
             {option.label}
           </button>

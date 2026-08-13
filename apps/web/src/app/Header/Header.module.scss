@@ -11,11 +11,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-md);
   min-height: 64px;
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   font-size: var(--text-headline-sm-size);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -38,7 +42,7 @@
 .link {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 8px 12px;
   border-radius: var(--radius-md);
   color: var(--color-on-surface-muted);
@@ -70,7 +74,8 @@
 
 @media (max-width: 640px) {
   .inner {
-    min-height: 56px;
+    min-height: 0;
+    padding-block: var(--space-sm);
   }
 
   .logo {

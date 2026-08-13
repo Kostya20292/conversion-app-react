@@ -10,30 +10,18 @@
   font-size: var(--text-headline-md-size);
   font-weight: var(--text-headline-md-weight);
   line-height: var(--text-headline-md-line);
+  letter-spacing: var(--text-headline-md-tracking);
 }
 
 .lead {
-  margin-top: var(--space-sm);
+  margin-block-start: var(--space-sm);
   color: var(--color-on-surface-muted);
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-line);
 }
 
-.form {
+.actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  margin-top: var(--space-lg);
-}
-
-.footer {
-  margin-top: var(--space-lg);
-  font-size: var(--text-label-md-size);
-  font-weight: var(--text-label-md-weight);
-}
-
-.footer a {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--control-height);
+  margin-block-start: var(--space-xl);
 }

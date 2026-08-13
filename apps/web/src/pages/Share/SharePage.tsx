@@ -71,7 +71,7 @@ const ShareUnavailableCard = () => (
       Срок действия истёк или ссылку отозвали. Попросите новую у того, кто ею поделился.
     </p>
     <div className={styles.actions}>
-      <Link to="/" className={styles.primaryLink}>
+      <Link to="/" className="buttonLink buttonLinkFull">
         Сконвертировать свой файл
       </Link>
     </div>

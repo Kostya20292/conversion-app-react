@@ -32,3 +32,9 @@
   color: var(--color-on-surface-muted);
   font-size: var(--text-body-sm-size);
 }
+
+.footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+}

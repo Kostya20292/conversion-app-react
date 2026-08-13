@@ -38,6 +38,7 @@
 
 .routeControl {
   justify-content: center;
+  width: min(560px, 100%);
 }
 
 .upload {
@@ -72,7 +73,7 @@
 .bannerLink {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: var(--control-height);
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
 }
@@ -126,6 +127,9 @@
 }
 
 .textLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
   font-size: var(--text-label-lg-size);
   font-weight: var(--text-label-lg-weight);
 }
@@ -136,6 +140,10 @@
   }
 
   .cta {
+    width: 100%;
+  }
+
+  .routeControl {
     width: 100%;
   }
 }

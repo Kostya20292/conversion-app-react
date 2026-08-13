@@ -9,7 +9,7 @@
 }
 
 .segment {
-  min-height: 36px;
+  min-height: var(--control-height);
   padding: 8px 14px;
   border: 0;
   border-radius: var(--radius-md);
@@ -36,4 +36,18 @@
 .active {
   background-color: var(--color-primary-muted);
   color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+  .root {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment {
+    transition: none;
+  }
 }

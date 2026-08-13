@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/Button/Button';
 import styles from './ApiDocsPage.module.scss';
 
 export const ApiDocsPage = () => (
@@ -44,8 +43,8 @@ export const ApiDocsPage = () => (
     </section>
 
     <div className={styles.cta}>
-      <Link to="/register">
-        <Button>Получить API-ключ</Button>
+      <Link to="/register" className="buttonLink">
+        Получить API-ключ
       </Link>
     </div>
   </div>

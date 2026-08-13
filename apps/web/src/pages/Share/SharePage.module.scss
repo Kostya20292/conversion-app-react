@@ -68,32 +68,3 @@
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
 }
-
-.primaryLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--control-height);
-  padding: 12px var(--space-md);
-  border-radius: var(--radius-md);
-  background-color: var(--color-primary);
-  color: var(--color-neutral);
-  font-size: var(--text-label-lg-size);
-  font-weight: var(--text-label-lg-weight);
-  line-height: var(--text-label-lg-line);
-}
-
-.primaryLink:hover {
-  color: var(--color-neutral);
-  background-color: var(--color-primary-hover);
-}
-
-.primaryLink:active {
-  color: var(--color-neutral);
-  background-color: var(--color-primary-pressed);
-}
-
-.primaryLink:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}

@@ -91,3 +91,16 @@
   gap: var(--space-sm);
   margin-top: var(--space-lg);
 }
+
+@media (max-width: 640px) {
+  .root {
+    min-height: 160px;
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
+  }
+}
