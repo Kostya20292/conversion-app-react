@@ -1,18 +1,78 @@
-import { type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Checkbox } from '@/components/Checkbox/Checkbox';
 import { Input } from '@/components/Input/Input';
+import {
+  getFirstErrorField,
+  LOGIN_FIELD_ORDER,
+  type LoginFormErrors,
+  type LoginFormValues,
+  validateLoginForm,
+} from '@/features/auth/validateAuthForm';
 import styles from './LoginPage.module.scss';
+
+const LOGIN_FIELD_IDS = {
+  email: 'login-email',
+  password: 'login-password',
+} as const;
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [fieldErrors, setFieldErrors] = useState<LoginFormErrors>({});
+  const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
+  const [isClientAccepted, setIsClientAccepted] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  const fieldRefs = {
+    email: emailRef,
+    password: passwordRef,
+  };
+
+  const getFormValues = (): LoginFormValues => ({ email, password });
+
+  const syncFieldError = (field: keyof LoginFormValues, values: LoginFormValues) => {
+    if (!isSubmitAttempted) {
+      return;
+    }
+
+    const nextErrors = validateLoginForm(values);
+    setFieldErrors((current) => ({ ...current, [field]: nextErrors[field] }));
+  };
+
+  const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setEmail(value);
+    setIsClientAccepted(false);
+    syncFieldError('email', { email: value, password });
+  };
+
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setPassword(value);
+    setIsClientAccepted(false);
+    syncFieldError('password', { email, password: value });
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitAttempted(true);
+
+    const nextErrors = validateLoginForm(getFormValues());
+    setFieldErrors(nextErrors);
+
+    const firstErrorField = getFirstErrorField(nextErrors, LOGIN_FIELD_ORDER);
+    if (firstErrorField) {
+      setIsClientAccepted(false);
+      fieldRefs[firstErrorField].current?.focus();
+      return;
+    }
+
+    setIsClientAccepted(true);
   };
 
   return (
@@ -23,21 +83,27 @@ export const LoginPage = () => {
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <Input
-            id="login-email"
+            id={LOGIN_FIELD_IDS.email}
+            ref={emailRef}
             label="Email"
+            name="email"
             type="email"
             autoComplete="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            error={fieldErrors.email}
+            onChange={handleEmailChange}
             required
           />
           <Input
-            id="login-password"
+            id={LOGIN_FIELD_IDS.password}
+            ref={passwordRef}
             label="Пароль"
+            name="password"
             type="password"
             autoComplete="current-password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            error={fieldErrors.password}
+            onChange={handlePasswordChange}
             required
           />
           <Checkbox
@@ -46,7 +112,9 @@ export const LoginPage = () => {
             checked={rememberMe}
             onChange={(event) => setRememberMe(event.target.checked)}
           />
-          <Alert variant="info">Авторизация подключится на следующем этапе.</Alert>
+          {isClientAccepted ? (
+            <Alert variant="info">Авторизация подключится на следующем этапе.</Alert>
+          ) : null}
           <Button type="submit" fullWidth>
             Войти
           </Button>

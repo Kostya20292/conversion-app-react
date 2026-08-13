@@ -4,13 +4,23 @@ import styles from './Input.module.scss';
 
 export type { FieldErrorProps, InputProps } from './Input.types';
 
-export const Input = ({ label, error, hint, id, className, disabled, ...rest }: InputProps) => (
+export const Input = ({
+  label,
+  error,
+  hint,
+  id,
+  className,
+  disabled,
+  ref,
+  ...rest
+}: InputProps) => (
   <div className={clsx(styles.field, className)}>
     <label className={styles.label} htmlFor={id}>
       {label}
     </label>
     <input
       id={id}
+      ref={ref}
       className={styles.input}
       disabled={disabled}
       aria-invalid={error ? true : undefined}
