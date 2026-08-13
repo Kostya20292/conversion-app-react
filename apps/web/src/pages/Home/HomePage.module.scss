@@ -40,27 +40,9 @@
   justify-content: center;
 }
 
-.uploadPlaceholder {
+.upload {
   width: min(560px, 100%);
   margin-top: var(--space-lg);
-  padding: var(--space-2xl) var(--space-lg);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface-raised);
-  color: var(--color-on-surface-muted);
-}
-
-.uploadTitle {
-  margin: 0;
-  font-size: var(--text-label-lg-size);
-  font-weight: var(--text-label-lg-weight);
-  color: var(--color-on-surface);
-}
-
-.uploadHint {
-  margin: var(--space-sm) 0 0;
-  font-size: var(--text-body-sm-size);
-  line-height: var(--text-body-sm-line);
 }
 
 .cta {

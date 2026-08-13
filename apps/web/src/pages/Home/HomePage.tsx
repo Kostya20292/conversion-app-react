@@ -1,14 +1,20 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Banner } from '@/components/Banner/Banner';
 import { Button } from '@/components/Button/Button';
+import { Dropzone } from '@/components/Dropzone/Dropzone';
 import { SegmentedControl } from '@/components/SegmentedControl/SegmentedControl';
-import { CONVERSION_ROUTE_OPTIONS, DEFAULT_CONVERSION_ROUTE } from '@/constants/conversion';
-import type { ConversionRoute } from '@/types/conversion';
+import { CONVERSION_ROUTE_OPTIONS } from '@/constants/conversion';
+import { useConversionStore } from '@/features/conversion/conversionStore';
 import styles from './HomePage.module.scss';
 
 export const HomePage = () => {
-  const [route, setRoute] = useState<ConversionRoute>(DEFAULT_CONVERSION_ROUTE);
+  const route = useConversionStore((state) => state.route);
+  const file = useConversionStore((state) => state.file);
+  const error = useConversionStore((state) => state.error);
+  const setRoute = useConversionStore((state) => state.setRoute);
+  const selectFiles = useConversionStore((state) => state.selectFiles);
+  const clearFile = useConversionStore((state) => state.clearFile);
+  const canConvert = Boolean(file) && !error;
 
   return (
     <div className={styles.page}>
@@ -28,12 +34,11 @@ export const HomePage = () => {
           />
         </div>
 
-        <div className={styles.uploadPlaceholder} aria-hidden="true">
-          <p className={styles.uploadTitle}>Зона загрузки файла</p>
-          <p className={styles.uploadHint}>1 файл, до 10 МБ — появится на следующем этапе</p>
+        <div className={styles.upload}>
+          <Dropzone file={file} error={error} onFilesSelected={selectFiles} onClear={clearFile} />
         </div>
 
-        <Button disabled fullWidth={false} className={styles.cta}>
+        <Button disabled={!canConvert} fullWidth={false} className={styles.cta}>
           Конвертировать
         </Button>
       </section>
