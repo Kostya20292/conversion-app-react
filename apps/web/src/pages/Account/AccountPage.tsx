@@ -2,21 +2,61 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
-import { Input } from '@/components/Input/Input';
 import { Modal } from '@/components/Modal/Modal';
+import { Toast } from '@/components/Toast/Toast';
 import { Toggle } from '@/components/Toggle/Toggle';
+import { copyToClipboard } from '@/lib/copyToClipboard';
+import type { ShareLinkItem, StoredFile } from '@/types/account';
+import { AccountApiKeySection } from './AccountApiKeySection';
+import { AccountFileList, AccountShareList } from './AccountLists';
+import { AccountProfileSection } from './AccountProfileSection';
 import styles from './AccountPage.module.scss';
+
+const EMPTY_FILES: StoredFile[] = [];
 
 export const AccountPage = () => {
   const [saveConversions, setSaveConversions] = useState(false);
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [shares, setShares] = useState<ShareLinkItem[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<StoredFile | null>(null);
+  const [shareToRevoke, setShareToRevoke] = useState<ShareLinkItem | null>(null);
 
-  const handleOpenKeyModal = () => {
-    setIsKeyModalOpen(true);
+  const handleNotify = (message: string) => {
+    setToastMessage(message);
   };
 
-  const handleCloseKeyModal = () => {
-    setIsKeyModalOpen(false);
+  const handleCloseToast = () => {
+    setToastMessage(null);
+  };
+
+  const handleDownloadFile = (_file: StoredFile) => {
+    handleNotify('Скачивание подключится на следующем этапе.');
+  };
+
+  const handleShareFile = (_file: StoredFile) => {
+    handleNotify('Создание ссылки подключится на следующем этапе.');
+  };
+
+  const handleCopyShare = async (share: ShareLinkItem) => {
+    const copied = await copyToClipboard(share.url);
+    handleNotify(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
+  };
+
+  const handleLogout = () => {
+    handleNotify('Выход подключится на следующем этапе.');
+  };
+
+  const handleConfirmDeleteFile = () => {
+    handleNotify('Удаление файла подключится на следующем этапе.');
+    setFileToDelete(null);
+  };
+
+  const handleConfirmRevokeShare = () => {
+    if (shareToRevoke) {
+      setShares((current) => current.filter((item) => item.id !== shareToRevoke.id));
+    }
+    handleNotify('Отзыв ссылки подключится на следующем этапе.');
+    setShareToRevoke(null);
   };
 
   return (
@@ -28,81 +68,73 @@ export const AccountPage = () => {
         Страница пока без авторизации. Guard и данные с API появятся на этапе B.
       </Alert>
 
-      <section className={styles.card} aria-labelledby="profile-title">
-        <h2 id="profile-title" className={styles.sectionTitle}>
-          Профиль
-        </h2>
-        <div className={styles.form}>
-          <Input id="account-name" label="Имя" defaultValue="" />
-          <Input id="account-email" label="Email" type="email" defaultValue="" />
-          <Input
-            id="account-password"
-            label="Новый пароль"
-            type="password"
-            autoComplete="new-password"
+      <div className={styles.layout}>
+        <div className={styles.settings}>
+          <AccountProfileSection onNotify={handleNotify} />
+          <AccountApiKeySection onNotify={handleNotify} />
+          <section className={styles.card} aria-labelledby="save-title">
+            <h2 id="save-title" className={styles.srOnly}>
+              Сохранение конвертаций
+            </h2>
+            <Toggle
+              id="save-conversions"
+              label="Сохранять конвертации в профиле"
+              description="Выключение не удаляет уже сохранённые файлы"
+              checked={saveConversions}
+              onChange={(event) => setSaveConversions(event.target.checked)}
+            />
+          </section>
+        </div>
+
+        <div className={styles.lists}>
+          <AccountFileList
+            files={EMPTY_FILES}
+            onDownload={handleDownloadFile}
+            onShare={handleShareFile}
+            onDelete={setFileToDelete}
           />
-          <Button variant="secondary">Сохранить профиль</Button>
+          <AccountShareList
+            shares={shares}
+            onCopy={(share) => void handleCopyShare(share)}
+            onRevoke={setShareToRevoke}
+          />
         </div>
-      </section>
-
-      <section className={styles.card} aria-labelledby="api-key-title">
-        <h2 id="api-key-title" className={styles.sectionTitle}>
-          API-ключ
-        </h2>
-        <p className={styles.meta}>Ключ: cv_live_••••••••••••</p>
-        <div className={styles.actions}>
-          <Button variant="secondary">Скопировать</Button>
-          <Button variant="danger" onClick={handleOpenKeyModal}>
-            Перевыпустить
-          </Button>
-        </div>
-      </section>
-
-      <section className={styles.card} aria-labelledby="save-title">
-        <h2 id="save-title" className={styles.srOnly}>
-          Сохранение конвертаций
-        </h2>
-        <Toggle
-          id="save-conversions"
-          label="Сохранять конвертации в профиле"
-          description="Выключение не удаляет уже сохранённые файлы"
-          checked={saveConversions}
-          onChange={(event) => setSaveConversions(event.target.checked)}
-        />
-      </section>
-
-      <section className={styles.card} aria-labelledby="files-title">
-        <h2 id="files-title" className={styles.sectionTitle}>
-          Сохранённые файлы
-        </h2>
-        <p className={styles.empty}>Пока нет сохранённых файлов. Сконвертируйте файл на главной.</p>
-      </section>
-
-      <section className={styles.card} aria-labelledby="shares-title">
-        <h2 id="shares-title" className={styles.sectionTitle}>
-          Активные ссылки
-        </h2>
-        <p className={styles.empty}>Активных share-ссылок нет.</p>
-      </section>
+      </div>
 
       <div className={styles.footerActions}>
-        <Button variant="tertiary">Выйти</Button>
+        <Button variant="tertiary" onClick={handleLogout}>
+          Выйти
+        </Button>
         <Link to="/" className={styles.link}>
           На главную
         </Link>
       </div>
 
       <Modal
-        open={isKeyModalOpen}
-        title="Перевыпустить API-ключ?"
-        onClose={handleCloseKeyModal}
-        confirmLabel="Перевыпустить"
+        open={Boolean(fileToDelete)}
+        title="Удалить файл?"
+        onClose={() => setFileToDelete(null)}
+        confirmLabel="Удалить"
         cancelLabel="Отмена"
         danger
-        onConfirm={handleCloseKeyModal}
+        onConfirm={handleConfirmDeleteFile}
       >
-        Старый ключ перестанет работать сразу. Новый ключ будет показан один раз.
+        Файл исчезнет из списка в профиле. Это действие нельзя отменить.
       </Modal>
+
+      <Modal
+        open={Boolean(shareToRevoke)}
+        title="Отозвать ссылку?"
+        onClose={() => setShareToRevoke(null)}
+        confirmLabel="Отозвать"
+        cancelLabel="Отмена"
+        danger
+        onConfirm={handleConfirmRevokeShare}
+      >
+        Ссылка сразу перестанет открываться. Страница по ней покажет, что доступ недоступен.
+      </Modal>
+
+      <Toast open={Boolean(toastMessage)} message={toastMessage ?? ''} onClose={handleCloseToast} />
     </div>
   );
 };
