@@ -76,7 +76,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className={`container ${styles.page}`}>
+    <div className="container narrowPage">
       <div className={styles.card}>
         <h1 className={styles.title}>Вход</h1>
         <p className={styles.lead}>Войдите, чтобы открыть личный кабинет и API-ключ.</p>

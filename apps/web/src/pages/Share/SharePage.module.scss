@@ -1,11 +1,5 @@
-.page {
-  display: flex;
-  justify-content: center;
-  padding-block: var(--space-2xl);
-}
-
 .card {
-  width: min(480px, 100%);
+  width: min(var(--auth-max), 100%);
   padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -16,13 +10,19 @@
   font-size: var(--text-headline-md-size);
   font-weight: var(--text-headline-md-weight);
   line-height: var(--text-headline-md-line);
+  letter-spacing: var(--text-headline-md-tracking);
+  overflow-wrap: anywhere;
 }
 
 .lead {
-  margin-top: var(--space-sm);
+  margin-block-start: var(--space-sm);
   color: var(--color-on-surface-muted);
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-line);
+}
+
+.notice {
+  margin-block-start: var(--space-lg);
 }
 
 .meta {
@@ -31,37 +31,69 @@
   margin: var(--space-lg) 0 0;
 }
 
-.meta div {
+.metaRow {
   display: grid;
-  grid-template-columns: 88px 1fr;
-  gap: var(--space-sm);
+  grid-template-columns: auto 1fr;
+  gap: var(--space-sm) var(--space-md);
+  align-items: baseline;
 }
 
 .meta dt {
   color: var(--color-on-surface-muted);
   font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  line-height: var(--text-label-md-line);
 }
 
 .meta dd {
   margin: 0;
   font-size: var(--text-body-sm-size);
-}
-
-.meta code {
-  font-family: var(--font-mono);
-  font-size: var(--text-code-sm-size);
-  word-break: break-all;
+  line-height: var(--text-body-sm-line);
+  overflow-wrap: anywhere;
 }
 
 .actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--space-md);
-  margin-top: var(--space-xl);
+  margin-block-start: var(--space-xl);
 }
 
 .link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
+}
+
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 12px var(--space-md);
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-neutral);
+  font-size: var(--text-label-lg-size);
+  font-weight: var(--text-label-lg-weight);
+  line-height: var(--text-label-lg-line);
+}
+
+.primaryLink:hover {
+  color: var(--color-neutral);
+  background-color: var(--color-primary-hover);
+}
+
+.primaryLink:active {
+  color: var(--color-neutral);
+  background-color: var(--color-primary-pressed);
+}
+
+.primaryLink:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }

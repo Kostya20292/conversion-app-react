@@ -54,7 +54,7 @@ export const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className={`container ${styles.page}`}>
+    <div className="container narrowPage">
       <div className={styles.card}>
         <h1 className={styles.title}>Восстановление пароля</h1>
         <p className={styles.lead}>

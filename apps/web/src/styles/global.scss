@@ -92,3 +92,12 @@ samp {
   margin-inline: auto;
   padding-inline: var(--space-margin);
 }
+
+.narrowPage {
+  display: grid;
+  flex: 1 1 auto;
+  place-content: center;
+  place-content: safe center;
+  width: 100%;
+  padding-block: var(--space-2xl);
+}

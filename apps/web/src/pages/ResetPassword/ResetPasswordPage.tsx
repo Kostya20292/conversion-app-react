@@ -99,7 +99,7 @@ export const ResetPasswordPage = () => {
   };
 
   return (
-    <div className={`container ${styles.page}`}>
+    <div className="container narrowPage">
       <div className={styles.card}>
         <h1 className={styles.title}>Новый пароль</h1>
         <p className={styles.lead}>Введите код из Telegram и задайте новый пароль.</p>

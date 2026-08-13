@@ -111,7 +111,7 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className={`container ${styles.page}`}>
+    <div className="container narrowPage">
       <div className={styles.card}>
         <h1 className={styles.title}>Регистрация</h1>
         <p className={styles.lead}>Создайте аккаунт, чтобы сохранять файлы и получить API-ключ.</p>
