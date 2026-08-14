@@ -1,5 +1,4 @@
-export type EmailValidationResult =
-  { ok: true; email: string } | { ok: false; message: string };
+export type EmailValidationResult = { ok: true; email: string } | { ok: false; message: string };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

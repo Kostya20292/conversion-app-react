@@ -73,9 +73,6 @@
     },
     {
       "files": ["**/*.{test,spec}.{ts,tsx}"],
-      "env": {
-        "vitest": true
-      },
       "rules": {
         "vitest/no-disabled-tests": "warn",
         "vitest/warn-todo": "warn"

@@ -1,8 +1,7 @@
 import clsx from 'clsx';
+import { FieldError } from '@/components/FieldError/FieldError';
 import type { CheckboxProps } from './Checkbox.types';
 import styles from './Checkbox.module.scss';
-
-export type { CheckboxProps } from './Checkbox.types';
 
 export const Checkbox = ({ label, id, error, className, disabled, ...rest }: CheckboxProps) => (
   <div className={clsx(styles.wrapper, className)}>
@@ -19,10 +18,10 @@ export const Checkbox = ({ label, id, error, className, disabled, ...rest }: Che
       <span className={styles.box} aria-hidden="true" />
       <span className={styles.text}>{label}</span>
     </label>
-    {error ? (
-      <p id={`${id}-error`} className={styles.error} role="alert">
+    {error && (
+      <FieldError id={`${id}-error`} className={styles.error}>
         {error}
-      </p>
-    ) : null}
+      </FieldError>
+    )}
   </div>
 );

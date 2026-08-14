@@ -26,6 +26,9 @@ React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../..
 - Poll job status **every 2s** until `completed` / `failed` ([architecture](../../docs/architecture.md) §4.1).
 - Keep conversion business logic out of `api/`; HTTP + error parsing only.
 - Styles — **SCSS Modules** next to the component (`Component.module.scss`), not global CSS for everything.
+- One component per folder (`tsx` + `module.scss` + `types.ts` if local props exist). Details — [architecture](../../docs/architecture.md) §3.1.
+- `import type` from `./Component.types`; do not re-export types from the tsx.
+- Conditional UI without an else branch: `{cond && <X />}`, not `{cond ? <X /> : null}`. Keep ternary when both branches render.
 - A11y: `aria-label`, keyboard for interactive controls, meaningful `alt` / `role`.
 - React Compiler in use — do not add `useMemo`/`useCallback` unless needed.
 - Tests: Vitest / Playwright ([stack](../../docs/tech-stack.md) §7).

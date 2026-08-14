@@ -51,6 +51,12 @@
   min-width: 220px;
 }
 
+.convertNotice {
+  width: min(560px, 100%);
+  margin-top: var(--space-md);
+  text-align: start;
+}
+
 .section {
   padding-top: var(--space-2xl);
 }

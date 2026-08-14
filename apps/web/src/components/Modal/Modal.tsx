@@ -3,8 +3,6 @@ import { Button } from '@/components/Button/Button';
 import type { ModalProps } from './Modal.types';
 import styles from './Modal.module.scss';
 
-export type { ModalProps } from './Modal.types';
-
 const supportsClosedBy =
   typeof HTMLDialogElement !== 'undefined' && 'closedBy' in HTMLDialogElement.prototype;
 
@@ -20,6 +18,7 @@ export const Modal = ({
 }: ModalProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const skipCloseCallbackRef = useRef(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -31,6 +30,7 @@ export const Modal = ({
     }
 
     if (!open && dialog.open) {
+      skipCloseCallbackRef.current = true;
       dialog.close();
     }
   }, [open]);
@@ -50,20 +50,29 @@ export const Modal = ({
         event.clientX <= rect.left + rect.width;
 
       if (isInsideContent) return;
-      onClose();
+      dialog.close();
     };
 
     dialog.addEventListener('click', handleClick);
     return () => dialog.removeEventListener('click', handleClick);
-  }, [onClose]);
+  }, []);
 
-  const handleClose = () => {
+  const requestClose = () => {
+    dialogRef.current?.close();
+  };
+
+  const handleDialogClose = () => {
+    if (skipCloseCallbackRef.current) {
+      skipCloseCallbackRef.current = false;
+      return;
+    }
+
     onClose();
   };
 
   const handleConfirm = () => {
     onConfirm?.();
-    onClose();
+    requestClose();
   };
 
   return (
@@ -72,11 +81,7 @@ export const Modal = ({
       className={styles.dialog}
       aria-labelledby={titleId}
       {...(supportsClosedBy ? { closedby: 'any' as const } : {})}
-      onClose={handleClose}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
+      onClose={handleDialogClose}
     >
       <div className={styles.panel}>
         <h2 id={titleId} className={styles.title}>
@@ -84,14 +89,14 @@ export const Modal = ({
         </h2>
         <div className={styles.body}>{children}</div>
         <div className={styles.actions}>
-          <Button variant="secondary" onClick={handleClose}>
+          <Button variant="secondary" onClick={requestClose}>
             {cancelLabel}
           </Button>
-          {onConfirm ? (
+          {onConfirm && (
             <Button variant={danger ? 'danger' : 'primary'} onClick={handleConfirm}>
               {confirmLabel}
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </dialog>

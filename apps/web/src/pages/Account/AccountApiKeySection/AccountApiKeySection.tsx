@@ -3,11 +3,8 @@ import { Button } from '@/components/Button/Button';
 import { Modal } from '@/components/Modal/Modal';
 import { copyToClipboard } from '@/lib/copyToClipboard';
 import { maskApiKey } from '@/lib/maskApiKey';
-import styles from './AccountPage.module.scss';
-
-type AccountApiKeySectionProps = {
-  onNotify: (message: string) => void;
-};
+import type { AccountApiKeySectionProps } from './AccountApiKeySection.types';
+import styles from './AccountApiKeySection.module.scss';
 
 const INITIAL_PLACEHOLDER_KEY = 'cv_live_placeholder_not_secret';
 

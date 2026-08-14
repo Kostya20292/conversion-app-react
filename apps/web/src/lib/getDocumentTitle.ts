@@ -1,4 +1,4 @@
-import { isUnavailableSharePreview } from '@/features/share/isUnavailableSharePreview';
+import { isUnavailableSharePreview } from '@/constants/share';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Convertly — конвертация файлов онлайн',

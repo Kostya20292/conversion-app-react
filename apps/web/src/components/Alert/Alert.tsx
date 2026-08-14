@@ -1,15 +1,29 @@
+import { useId } from 'react';
 import clsx from 'clsx';
 import type { AlertProps } from './Alert.types';
 import styles from './Alert.module.scss';
 
-export type { AlertProps, AlertVariant } from './Alert.types';
+export const Alert = ({
+  variant = 'info',
+  title,
+  children,
+  className,
+  live = false,
+}: AlertProps) => {
+  const titleId = useId();
 
-export const Alert = ({ variant = 'info', title, children, className }: AlertProps) => (
-  <div
-    className={clsx(styles.alert, styles[variant], className)}
-    role={variant === 'error' ? 'alert' : 'status'}
-  >
-    {title ? <p className={styles.title}>{title}</p> : null}
-    <div className={styles.body}>{children}</div>
-  </div>
-);
+  return (
+    <div
+      className={clsx(styles.alert, styles[variant], className)}
+      role={live ? (variant === 'error' ? 'alert' : 'status') : undefined}
+      aria-labelledby={title ? titleId : undefined}
+    >
+      {title && (
+        <strong id={titleId} className={styles.title}>
+          {title}
+        </strong>
+      )}
+      <div className={styles.body}>{children}</div>
+    </div>
+  );
+};

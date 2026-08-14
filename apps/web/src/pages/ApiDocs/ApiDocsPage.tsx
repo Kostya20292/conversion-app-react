@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { ButtonLink } from '@/components/ButtonLink/ButtonLink';
 import styles from './ApiDocsPage.module.scss';
 
 export const ApiDocsPage = () => (
@@ -43,9 +43,7 @@ export const ApiDocsPage = () => (
     </section>
 
     <div className={styles.cta}>
-      <Link to="/register" className="buttonLink">
-        Получить API-ключ
-      </Link>
+      <ButtonLink to="/register">Получить API-ключ</ButtonLink>
     </div>
   </div>
 );

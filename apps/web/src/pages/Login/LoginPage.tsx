@@ -5,12 +5,12 @@ import { Button } from '@/components/Button/Button';
 import { Checkbox } from '@/components/Checkbox/Checkbox';
 import { Input } from '@/components/Input/Input';
 import {
-  getFirstErrorField,
   LOGIN_FIELD_ORDER,
   type LoginFormErrors,
   type LoginFormValues,
   validateLoginForm,
 } from '@/features/auth/validateAuthForm';
+import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import styles from './LoginPage.module.scss';
 
 const LOGIN_FIELD_IDS = {
@@ -112,9 +112,11 @@ export const LoginPage = () => {
             checked={rememberMe}
             onChange={(event) => setRememberMe(event.target.checked)}
           />
-          {isClientAccepted ? (
-            <Alert variant="info">Авторизация подключится на следующем этапе.</Alert>
-          ) : null}
+          {isClientAccepted && (
+            <Alert variant="info" live>
+              Авторизация подключится на следующем этапе.
+            </Alert>
+          )}
           <Button type="submit" fullWidth>
             Войти
           </Button>

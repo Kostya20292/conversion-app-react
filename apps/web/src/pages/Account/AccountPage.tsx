@@ -7,9 +7,10 @@ import { Toast } from '@/components/Toast/Toast';
 import { Toggle } from '@/components/Toggle/Toggle';
 import { copyToClipboard } from '@/lib/copyToClipboard';
 import type { ShareLinkItem, StoredFile } from '@/types/account';
-import { AccountApiKeySection } from './AccountApiKeySection';
-import { AccountFileList, AccountShareList } from './AccountLists';
-import { AccountProfileSection } from './AccountProfileSection';
+import { AccountApiKeySection } from './AccountApiKeySection/AccountApiKeySection';
+import { AccountFileList } from './AccountFileList/AccountFileList';
+import { AccountProfileSection } from './AccountProfileSection/AccountProfileSection';
+import { AccountShareList } from './AccountShareList/AccountShareList';
 import styles from './AccountPage.module.scss';
 
 const EMPTY_FILES: StoredFile[] = [];

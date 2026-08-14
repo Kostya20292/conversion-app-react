@@ -7,4 +7,5 @@ export type AlertProps = {
   title?: string;
   children: ReactNode;
   className?: string;
+  live?: boolean;
 };

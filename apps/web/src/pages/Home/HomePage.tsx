@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Alert } from '@/components/Alert/Alert';
 import { Banner } from '@/components/Banner/Banner';
 import { Button } from '@/components/Button/Button';
 import { Dropzone } from '@/components/Dropzone/Dropzone';
 import { SegmentedControl } from '@/components/SegmentedControl/SegmentedControl';
 import { CONVERSION_ROUTE_OPTIONS } from '@/constants/conversion';
 import { useConversionStore } from '@/features/conversion/conversionStore';
+import type { ConversionRoute } from '@/types/conversion';
 import styles from './HomePage.module.scss';
 
 export const HomePage = () => {
@@ -15,6 +18,26 @@ export const HomePage = () => {
   const selectFiles = useConversionStore((state) => state.selectFiles);
   const clearFile = useConversionStore((state) => state.clearFile);
   const canConvert = Boolean(file) && !error;
+  const [isConvertAcknowledged, setIsConvertAcknowledged] = useState(false);
+
+  const handleRouteChange = (nextRoute: ConversionRoute) => {
+    setIsConvertAcknowledged(false);
+    setRoute(nextRoute);
+  };
+
+  const handleSelectFiles = (files: File[]) => {
+    setIsConvertAcknowledged(false);
+    selectFiles(files);
+  };
+
+  const handleClearFile = () => {
+    setIsConvertAcknowledged(false);
+    clearFile();
+  };
+
+  const handleConvert = () => {
+    setIsConvertAcknowledged(true);
+  };
 
   return (
     <div className={styles.page}>
@@ -30,17 +53,27 @@ export const HomePage = () => {
             className={styles.routeControl}
             options={CONVERSION_ROUTE_OPTIONS}
             value={route}
-            onChange={setRoute}
+            onChange={handleRouteChange}
           />
         </div>
 
         <div className={styles.upload}>
-          <Dropzone file={file} error={error} onFilesSelected={selectFiles} onClear={clearFile} />
+          <Dropzone
+            file={file}
+            error={error}
+            onFilesSelected={handleSelectFiles}
+            onClear={handleClearFile}
+          />
         </div>
 
-        <Button disabled={!canConvert} fullWidth={false} className={styles.cta}>
+        <Button disabled={!canConvert} className={styles.cta} onClick={handleConvert}>
           Конвертировать
         </Button>
+        {isConvertAcknowledged && (
+          <Alert variant="info" live className={styles.convertNotice}>
+            Конвертация подключится на следующем этапе.
+          </Alert>
+        )}
       </section>
 
       <section className={`container ${styles.section}`}>

@@ -9,13 +9,10 @@ import {
   type AccountProfileFormValues,
   validateAccountProfileForm,
 } from '@/features/account/validateAccountProfile';
-import { getFirstErrorField } from '@/features/auth/validateAuthForm';
+import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import { PASSWORD_HINT } from '@/lib/validatePassword';
-import styles from './AccountPage.module.scss';
-
-type AccountProfileSectionProps = {
-  onNotify: (message: string) => void;
-};
+import type { AccountProfileSectionProps } from './AccountProfileSection.types';
+import styles from './AccountProfileSection.module.scss';
 
 const FIELD_IDS = {
   displayName: 'account-name',
@@ -220,9 +217,11 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
           error={fieldErrors.newPasswordConfirm}
           onChange={handleNewPasswordConfirmChange}
         />
-        {isClientAccepted ? (
-          <Alert variant="info">Сохранение профиля подключится на следующем этапе.</Alert>
-        ) : null}
+        {isClientAccepted && (
+          <Alert variant="info" live>
+            Сохранение профиля подключится на следующем этапе.
+          </Alert>
+        )}
         <Button type="submit" variant="secondary">
           Сохранить профиль
         </Button>

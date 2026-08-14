@@ -4,12 +4,12 @@ import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
 import {
-  getFirstErrorField,
   RESET_PASSWORD_FIELD_ORDER,
   type ResetPasswordFormErrors,
   type ResetPasswordFormValues,
   validateResetPasswordForm,
 } from '@/features/auth/validateAuthForm';
+import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import { PASSWORD_HINT } from '@/lib/validatePassword';
 import styles from './ResetPasswordPage.module.scss';
 
@@ -145,11 +145,11 @@ export const ResetPasswordPage = () => {
             onChange={handlePasswordConfirmChange}
             required
           />
-          {isClientAccepted ? (
-            <Alert variant="info">
+          {isClientAccepted && (
+            <Alert variant="info" live>
               Проверка кода и смена пароля появятся на этапе восстановления.
             </Alert>
-          ) : null}
+          )}
           <Button type="submit" fullWidth>
             Сохранить пароль
           </Button>

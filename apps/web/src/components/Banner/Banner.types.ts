@@ -4,4 +4,5 @@ export type BannerProps = {
   children: ReactNode;
   className?: string;
   action?: ReactNode;
+  live?: boolean;
 };

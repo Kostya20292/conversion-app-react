@@ -1,3 +1,4 @@
+import { validateDisplayName } from '@/lib/validateDisplayName';
 import { validateEmail } from '@/lib/validateEmail';
 import { validatePassword, validatePasswordConfirmation } from '@/lib/validatePassword';
 
@@ -49,16 +50,6 @@ export const RESET_PASSWORD_FIELD_ORDER = [
   'password',
   'passwordConfirm',
 ] as const satisfies readonly (keyof ResetPasswordFormValues)[];
-
-export const validateDisplayName = (
-  displayName: string,
-): { ok: true } | { ok: false; message: string } => {
-  if (displayName.trim().length === 0) {
-    return { ok: false, message: 'Введите имя' };
-  }
-
-  return { ok: true };
-};
 
 export const validateLoginForm = (values: LoginFormValues): LoginFormErrors => {
   const errors: LoginFormErrors = {};
@@ -144,8 +135,3 @@ export const validateResetPasswordForm = (
 
   return errors;
 };
-
-export const getFirstErrorField = <T extends string>(
-  errors: Partial<Record<T, string>>,
-  order: readonly T[],
-): T | undefined => order.find((field) => Boolean(errors[field]));

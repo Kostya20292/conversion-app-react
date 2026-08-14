@@ -4,12 +4,12 @@ import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
 import {
-  getFirstErrorField,
   REGISTER_FIELD_ORDER,
   type RegisterFormErrors,
   type RegisterFormValues,
   validateRegisterForm,
 } from '@/features/auth/validateAuthForm';
+import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import { PASSWORD_HINT } from '@/lib/validatePassword';
 import styles from './RegisterPage.module.scss';
 
@@ -169,9 +169,11 @@ export const RegisterPage = () => {
           <Alert variant="info">
             Привязка Telegram для восстановления пароля будет доступна позже в личном кабинете.
           </Alert>
-          {isClientAccepted ? (
-            <Alert variant="info">Регистрация подключится на следующем этапе.</Alert>
-          ) : null}
+          {isClientAccepted && (
+            <Alert variant="info" live>
+              Регистрация подключится на следующем этапе.
+            </Alert>
+          )}
           <Button type="submit" fullWidth>
             Зарегистрироваться
           </Button>

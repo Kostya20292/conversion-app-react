@@ -1,8 +1,7 @@
 import clsx from 'clsx';
-import type { FieldErrorProps, InputProps } from './Input.types';
+import { FieldError } from '@/components/FieldError/FieldError';
+import type { InputProps } from './Input.types';
 import styles from './Input.module.scss';
-
-export type { FieldErrorProps, InputProps } from './Input.types';
 
 export const Input = ({
   label,
@@ -13,38 +12,31 @@ export const Input = ({
   disabled,
   ref,
   ...rest
-}: InputProps) => (
-  <div className={clsx(styles.field, className)}>
-    <label className={styles.label} htmlFor={id}>
-      {label}
-    </label>
-    <input
-      id={id}
-      ref={ref}
-      className={styles.input}
-      disabled={disabled}
-      aria-invalid={error ? true : undefined}
-      aria-describedby={
-        [error ? `${id}-error` : null, hint ? `${id}-hint` : null].filter(Boolean).join(' ') ||
-        undefined
-      }
-      {...rest}
-    />
-    {hint && !error ? (
-      <p id={`${id}-hint`} className={styles.hint}>
-        {hint}
-      </p>
-    ) : null}
-    {error ? (
-      <p id={`${id}-error`} className={styles.error} role="alert">
-        {error}
-      </p>
-    ) : null}
-  </div>
-);
+}: InputProps) => {
+  const errorId = error ? `${id}-error` : undefined;
+  const hintId = hint && !error ? `${id}-hint` : undefined;
+  const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
-export const FieldError = ({ id, children }: FieldErrorProps) => (
-  <p id={id} className={styles.error} role="alert">
-    {children}
-  </p>
-);
+  return (
+    <div className={clsx(styles.field, className)}>
+      <label className={styles.label} htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        ref={ref}
+        className={styles.input}
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        {...rest}
+      />
+      {hintId && (
+        <p id={hintId} className={styles.hint}>
+          {hint}
+        </p>
+      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
+    </div>
+  );
+};

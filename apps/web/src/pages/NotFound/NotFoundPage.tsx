@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { ButtonLink } from '@/components/ButtonLink/ButtonLink';
 import styles from './NotFoundPage.module.scss';
 
 export const NotFoundPage = () => (
@@ -7,9 +7,9 @@ export const NotFoundPage = () => (
       <h1 className={styles.title}>Страница не найдена</h1>
       <p className={styles.lead}>Такой страницы нет. Вернитесь на главную и сконвертируйте файл.</p>
       <div className={styles.actions}>
-        <Link to="/" className="buttonLink buttonLinkFull">
+        <ButtonLink to="/" fullWidth>
           На главную
-        </Link>
+        </ButtonLink>
       </div>
     </div>
   </div>

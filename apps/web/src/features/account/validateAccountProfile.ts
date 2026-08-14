@@ -1,4 +1,4 @@
-import { validateDisplayName } from '@/features/auth/validateAuthForm';
+import { validateDisplayName } from '@/lib/validateDisplayName';
 import { validateEmail } from '@/lib/validateEmail';
 import { validatePassword, validatePasswordConfirmation } from '@/lib/validatePassword';
 
@@ -38,8 +38,7 @@ export const validateAccountProfileForm = (
 
   const trimmedSavedEmail = savedEmail.trim();
   const emailChanged = trimmedSavedEmail.length > 0 && values.email.trim() !== trimmedSavedEmail;
-  const wantsPasswordChange =
-    values.newPassword.length > 0 || values.newPasswordConfirm.length > 0;
+  const wantsPasswordChange = values.newPassword.length > 0 || values.newPasswordConfirm.length > 0;
 
   if (emailChanged || wantsPasswordChange) {
     if (values.currentPassword.length === 0) {

@@ -2,11 +2,16 @@
   "name": "convertly",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=11"
+  },
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev": "pnpm format && pnpm --filter @convertly/web dev",
-    "build": "pnpm format && pnpm --filter @convertly/web build",
+    "dev": "pnpm --filter @convertly/web dev",
+    "build": "pnpm --filter @convertly/web build",
     "lint": "pnpm --filter @convertly/web lint",
     "preview": "pnpm --filter @convertly/web preview",
     "test": "pnpm --filter @convertly/web test",

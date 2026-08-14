@@ -2,12 +2,11 @@ import clsx from 'clsx';
 import { type MouseEvent, useId } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/Button/Button';
+import { FieldError } from '@/components/FieldError/FieldError';
 import { MAX_FILE_SIZE_MB } from '@/constants/conversion';
 import { formatFileSize } from '@/lib/formatFileSize';
 import type { DropzoneProps } from './Dropzone.types';
 import styles from './Dropzone.module.scss';
-
-export type { DropzoneProps } from './Dropzone.types';
 
 export const Dropzone = ({ file, error, onFilesSelected, onClear }: DropzoneProps) => {
   const instanceId = useId();
@@ -76,21 +75,21 @@ export const Dropzone = ({ file, error, onFilesSelected, onClear }: DropzoneProp
         1 файл, до {MAX_FILE_SIZE_MB} МБ
       </p>
 
-      {hasError ? (
-        <p id={errorId} className={styles.error} role="alert">
+      {hasError && (
+        <FieldError id={errorId} className={styles.error}>
           {error}
-        </p>
-      ) : null}
+        </FieldError>
+      )}
 
       <div className={styles.actions}>
         <Button variant="secondary" onClick={handleOpenPicker}>
           {file ? 'Заменить' : 'Выбрать файл'}
         </Button>
-        {file ? (
+        {file && (
           <Button variant="tertiary" onClick={handleClear}>
             Удалить
           </Button>
-        ) : null}
+        )}
       </div>
     </div>
   );

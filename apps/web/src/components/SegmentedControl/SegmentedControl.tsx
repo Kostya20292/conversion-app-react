@@ -3,8 +3,6 @@ import { type KeyboardEvent, useRef } from 'react';
 import type { SegmentedControlProps } from './SegmentedControl.types';
 import styles from './SegmentedControl.module.scss';
 
-export type { SegmentOption, SegmentedControlProps } from './SegmentedControl.types';
-
 export const SegmentedControl = <T extends string>({
   options,
   value,
@@ -42,7 +40,7 @@ export const SegmentedControl = <T extends string>({
   return (
     <div
       className={clsx(styles.root, className)}
-      role="tablist"
+      role="radiogroup"
       aria-label={ariaLabel}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
@@ -54,8 +52,8 @@ export const SegmentedControl = <T extends string>({
           <button
             key={option.value}
             type="button"
-            role="tab"
-            aria-selected={isActive}
+            role="radio"
+            aria-checked={isActive}
             tabIndex={isActive ? 0 : -1}
             className={clsx(styles.segment, isActive && styles.active)}
             ref={(node) => {

@@ -64,12 +64,12 @@
   outline-offset: 2px;
 }
 
-.active {
-  color: var(--color-primary);
-}
-
 .ctaLink {
   color: var(--color-on-surface);
+}
+
+.active {
+  color: var(--color-primary);
 }
 
 @media (max-width: 640px) {

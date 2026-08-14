@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, Ref } from 'react';
+import type { InputHTMLAttributes, Ref } from 'react';
 
 export type InputProps = {
   label: string;
@@ -7,8 +7,3 @@ export type InputProps = {
   id: string;
   ref?: Ref<HTMLInputElement>;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'id'>;
-
-export type FieldErrorProps = {
-  id?: string;
-  children: ReactNode;
-};

@@ -7,9 +7,9 @@ import {
   FORGOT_PASSWORD_FIELD_ORDER,
   type ForgotPasswordFormErrors,
   type ForgotPasswordFormValues,
-  getFirstErrorField,
   validateForgotPasswordForm,
 } from '@/features/auth/validateAuthForm';
+import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import styles from './ForgotPasswordPage.module.scss';
 
 const FORGOT_EMAIL_ID = 'forgot-email';
@@ -74,12 +74,12 @@ export const ForgotPasswordPage = () => {
             onChange={handleEmailChange}
             required
           />
-          {isClientAccepted ? (
-            <Alert variant="info">
+          {isClientAccepted && (
+            <Alert variant="info" live>
               Если к аккаунту привязан Telegram, откройте бота и введите код. Сообщение одинаково,
               есть аккаунт или нет. Отправка кода подключится на следующем этапе.
             </Alert>
-          ) : null}
+          )}
           <Button type="submit" fullWidth>
             Запросить код
           </Button>
