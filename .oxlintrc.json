@@ -49,6 +49,7 @@
     "react/react-compiler": "warn",
     "typescript/no-explicit-any": "error",
     "import/no-cycle": "error",
+    "import/no-relative-parent-imports": "error",
     "jsx-a11y/anchor-is-valid": [
       "error",
       {
@@ -76,6 +77,118 @@
       "rules": {
         "vitest/no-disabled-tests": "warn",
         "vitest/warn-todo": "warn"
+      }
+    },
+    {
+      "files": ["apps/web/src/components/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|features|api|app)(/|$)",
+                "message": "components не зависят от pages, features, api и app. Общее — в lib, types или constants."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/lib/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|components|features|api|app)(/|$)",
+                "message": "lib — чистые утилиты: только types, constants и другие модули lib."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/features/**/*.{ts,tsx}", "src/features/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|components|app)(/|$)",
+                "message": "features не зависят от UI-слоя (pages, components, app)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/api/**/*.{ts,tsx}", "src/api/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|components|features|app)(/|$)",
+                "message": "api — тонкий HTTP-слой без UI и Zustand."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/pages/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/pages(/|$)",
+                "message": "Страницы не импортируют другие страницы. Общее — в components, features или lib."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/types/**/*.{ts,tsx}", "src/types/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|components|features|api|app|lib|constants)(/|$)",
+                "message": "types не зависят от UI, фич и constants."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/constants/**/*.{ts,tsx}", "src/constants/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@/(pages|components|features|api|app|lib)(/|$)",
+                "message": "constants могут импортировать только types."
+              }
+            ]
+          }
+        ]
       }
     }
   ]

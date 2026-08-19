@@ -18,6 +18,18 @@ React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../..
 | `features/conversion/` | Zustand: file → upload → poll → result |
 | `api/` | thin Nest fetch wrappers |
 | `styles/` | tokens / reset |
+| `lib/` | чистые утилиты |
+| `types/` | доменные типы |
+| `constants/` | константы экранов и лимитов |
+
+## Imports / alias `@/`
+
+Алиас `@/` → `src/` (Vite + `tsconfig.app.json`). Oxlint: `import/no-relative-parent-imports` + `no-restricted-imports` по слоям.
+
+- Кросс-папка: `import { Button } from '@/components/Button/Button'`.
+- Та же папка и дети маршрута: `./Component.types`, `./Component.module.scss`, `./AccountFileList/AccountFileList`.
+- Никогда `../` — вместо этого `@/`.
+- `pages` не импортируют другие `pages`. `components` не зависят от `pages` / `features` / `api` / `app`. `features` не зависят от UI. `lib` — только `types` / `constants` / `lib`.
 
 ## Rules
 
