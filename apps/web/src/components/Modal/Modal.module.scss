@@ -3,7 +3,8 @@
   padding: 0;
   border: 0;
   background: transparent;
-  max-width: calc(100vw - 2 * var(--space-margin));
+  inline-size: min(var(--auth-max), calc(100vw - 2 * var(--space-margin)));
+  max-inline-size: calc(100vw - 2 * var(--space-margin));
 }
 
 .dialog::backdrop {
@@ -11,7 +12,7 @@
 }
 
 .panel {
-  width: min(440px, 100%);
+  inline-size: 100%;
   padding: var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -29,6 +30,7 @@
 
 .body {
   margin-bottom: var(--space-lg);
+  overflow-wrap: anywhere;
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-line);
   color: var(--color-on-surface-muted);

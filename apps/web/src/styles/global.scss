@@ -94,10 +94,18 @@ samp {
 }
 
 .narrowPage {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
-  place-content: center;
-  place-content: safe center;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
   width: 100%;
   padding-block: var(--space-2xl);
+}
+
+.narrowPage > * {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  max-inline-size: min(var(--auth-max), 100%);
 }
