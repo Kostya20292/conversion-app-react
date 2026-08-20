@@ -12,9 +12,9 @@ React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../..
 
 | Folder | Purpose |
 | ------ | ------- |
-| `app/` | providers, router, layout (Header/Footer) |
+| `app/` | providers, router, layout |
 | `pages/` | route screens (`Home`, `Login`, `Account`, `Share`…) |
-| `components/` | reusable UI (Dropzone, JobStatus…) |
+| `components/` | reusable UI (Header, Footer, Dropzone, JobStatus…) |
 | `features/conversion/` | Zustand: file → upload → poll → result |
 | `api/` | thin Nest fetch wrappers |
 | `styles/` | tokens / reset |

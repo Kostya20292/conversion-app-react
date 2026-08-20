@@ -83,7 +83,7 @@ React + Vite + TypeScript + SCSS Modules. Только UI: экраны, фор�
 ```
 apps/web/
 ├── src/
-│   ├── app/                 # провайдеры, роутер, layout (Header/Footer)
+│   ├── app/                 # провайдеры, роутер, layout
 │   ├── pages/
 │   │   ├── Home/            # `/` — dropzone, конвертация, результат
 │   │   ├── Login/           # `/login`
@@ -93,7 +93,7 @@ apps/web/
 │   │   ├── Account/         # `/account` — профиль, ключ, файлы, shares
 │   │   ├── Share/           # `/s/:token` — публичное скачивание
 │   │   └── ApiDocs/         # `/api-docs`
-│   ├── components/          # Dropzone, JobStatus, ShareButton, …
+│   ├── components/          # Header, Footer, Dropzone, JobStatus, …
 │   ├── features/
 │   │   └── conversion/      # Zustand: текущий job, polling каждые 2 сек
 │   ├── api/                 # fetch-обёртки к Nest (auth cookie / X-API-Key не в SPA для API-ключа)
