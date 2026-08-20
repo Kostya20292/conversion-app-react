@@ -5,7 +5,7 @@ import styles from './Header.module.scss';
 export const Header = ({ isAuthenticated }: HeaderProps) => (
   <header className={styles.header}>
     <div className={`container ${styles.inner}`}>
-      <NavLink to="/" className={styles.logo} aria-label="Convertly — на главную">
+      <NavLink to="/" className={styles.logo} aria-label="Convertly — главная страница">
         Convertly
       </NavLink>
 

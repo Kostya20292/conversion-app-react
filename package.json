@@ -15,6 +15,7 @@
     "lint": "pnpm --filter @convertly/web lint",
     "preview": "pnpm --filter @convertly/web preview",
     "test": "pnpm --filter @convertly/web test",
+    "test:watch": "pnpm --filter @convertly/web test:watch",
     "test:e2e": "pnpm --filter @convertly/web test:e2e"
   },
   "devDependencies": {
