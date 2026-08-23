@@ -13,7 +13,7 @@ alwaysApply: true
 | E2E | Playwright | `apps/web/e2e/`; API — `apps/api/test/` |
 | Запуск | pnpm | `pnpm test` / `pnpm test:e2e` (не npm/yarn) |
 
-Минимум v1: валидация файла и пароля; маппинг `error.code` → RU; e2e — convert одного файла, share, API auth ([plan](../../docs/frontend-implementation-plan.md) §13).
+Минимум v1: валидация файла и пароля; маппинг `error.code` → RU; e2e — convert одного файла, share, API auth ([front](../../docs/frontend-implementation-plan.md) §13, [back](../../docs/backend-implementation-plan.md) §15).
 
 ## Протокол (обязателен)
 

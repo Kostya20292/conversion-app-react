@@ -11,6 +11,8 @@ File conversion web service. Source of truth:
 - [Architecture](../../docs/architecture.md)
 - [Tech stack](../../docs/tech-stack.md)
 - [Design](../../docs/design.md)
+- [Frontend plan](../../docs/frontend-implementation-plan.md)
+- [Backend plan](../../docs/backend-implementation-plan.md)
 
 ## Monorepo
 

@@ -2,19 +2,21 @@
 
 Пошаговый план для `apps/web`. Источники правды:
 
-| Документ                                 | Что брать                                                              |
-| ---------------------------------------- | ---------------------------------------------------------------------- |
-| [technical-task.md](./technical-task.md) | Экраны §4, ошибки §5, auth §6, jobs/polling §7, UC §12                 |
-| [architecture.md](./architecture.md)     | Структура `apps/web` §3.1, поток UI §4.1                               |
-| [tech-stack.md](./tech-stack.md)         | React, Vite, SCSS Modules, Zustand, react-dropzone, Vitest, Playwright |
-| [DESIGN.md](./DESIGN.md)                 | Токены, тёмная тема, компоненты, Do/Don't                              |
+| Документ                                                           | Что брать                                                              |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [technical-task.md](./technical-task.md)                           | Экраны §4, ошибки §5, auth §6, jobs/polling §7, UC §12                 |
+| [architecture.md](./architecture.md)                               | Структура `apps/web` §3.1, поток UI §4.1                               |
+| [tech-stack.md](./tech-stack.md)                                   | React, Vite, SCSS Modules, Zustand, react-dropzone, Vitest, Playwright |
+| [DESIGN.md](./DESIGN.md)                                           | Токены, тёмная тема, компоненты, Do/Don't                              |
+| [backend-implementation-plan.md](./backend-implementation-plan.md) | HTTP-контракт §12; этапы Nest A–I; что разблокирует фронт B–G          |
 
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. Бизнес-логика конвертации только на
 API.
 
 **Прогресс:** этап **A** — выполнен. В **A2** закрыты Dropzone, валидация, auth/recovery, UI ЛК,
-share, a11y/адаптив, 404 и `document.title`. Пока пропускаем `/api-docs` и unit-тесты. HTTP, моки,
-сессия и jobs — после бэкенда.
+share, a11y/адаптив, 404 и `document.title`. Пока пропускаем `/api-docs` и unit-тесты. HTTP, сессия
+и jobs — когда Nest дойдёт до соответствующих этапов
+([backend-implementation-plan.md](./backend-implementation-plan.md) §16).
 
 ---
 
@@ -27,9 +29,11 @@ react-dropzone, Vitest, Playwright, Oxlint, React Compiler. Каркас пап�
 **Цель плана:** заменить шаблон на SPA по ТЗ, слой за слоем, с проверяемым результатом на каждом
 этапе.
 
-**Зависимость от backend:** пока Nest нет — **не** пишем `src/api/`, **не** мокаем эндпоинты (ни
-адаптер, ни MSW). Делаем только UI и клиентскую логику. Публичный `X-API-Key` в SPA **не** кладём
-([architecture.md](./architecture.md) §3.1).
+**Зависимость от backend:** план API —
+[backend-implementation-plan.md](./backend-implementation-plan.md). Пока Nest нет — **не** пишем
+`src/api/`, **не** мокаем эндпоинты (ни адаптер, ни MSW). Делаем только UI и клиентскую логику.
+Публичный `X-API-Key` в SPA **не** кладём ([architecture.md](./architecture.md) §3.1). Пути UI и
+`/api/v1` — канон в бэкенд-плане §12, handshake — §17.
 
 ---
 
@@ -52,7 +56,8 @@ react-dropzone, Vitest, Playwright, Oxlint, React Compiler. Каркас пап�
 | 10  | Unit: валидация файла и правила пароля                              | §13                | ⏸ пропущено |
 
 **Не делаем до Nest:** §4 (HTTP-клиент и моки), §5.2 / §5.5–5.8 (сессия, guard, logout), §6.3–6.6
-(upload / poll / download), §8.1 (создать share), живые данные ЛК, e2e convert.
+(upload / poll / download), §8.1 (создать share), живые данные ЛК, e2e convert. Соответствие этапов
+— [backend-implementation-plan.md](./backend-implementation-plan.md) §16.
 
 ---
 
@@ -126,35 +131,41 @@ hero.
 
 ## 4. HTTP-клиент и типы API
 
-**Когда:** после Nest. Сейчас не делаем (см. §0.1).
+**Когда:** после бэкенд-этапа **B**
+([backend-implementation-plan.md](./backend-implementation-plan.md) §4, §16). Сейчас не делаем (см.
+§0.1).
 
 **Зачем:** тонкий слой `src/api/` ([architecture.md](./architecture.md) §3.1).
 
 | Шаг | Действие                                                                                       | Критерий готовности                                                    | Статус |
 | --- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------ |
-| 4.1 | Базовый `fetch` с `credentials: 'include'` (cookie JWT)                                        | Cookie уходит на `/api/auth/*` и UI-jobs                               | ⏸      |
+| 4.1 | Базовый `fetch` с `credentials: 'include'` (cookie JWT); Vite proxy `/api` → Nest              | Cookie уходит на `/api/auth/*` и `/api/jobs`                           | ⏸      |
 | 4.2 | Типы ответов: Job, User, StoredFile, ShareLink, ApiError                                       | Без лишнего `any`                                                      | ⏸      |
 | 4.3 | Маппинг `error.code` → русские сообщения ([technical-task.md](./technical-task.md) §5.1, §7.5) | UI никогда не показывает сырой английский `message` как основной текст | ⏸      |
 | 4.4 | Обработка 401 (сессия), 429 (rate limit), 5xx (toast)                                          | Единая точка                                                           | ⏸      |
 | 4.5 | Мок-адаптер / MSW                                                                              | **Не делаем.** Фронт без Nest идёт по §0.1, без фейкового API          | ⏸      |
 
-**Контракты UI (ориентир):**
+**Контракт UI** — канон в [backend-implementation-plan.md](./backend-implementation-plan.md) §12 (не
+дублировать пути здесь). Кратко:
 
-| Область      | Эндпоинты (ожидаемые)                                            |
-| ------------ | ---------------------------------------------------------------- |
-| Auth         | `POST /api/auth/register`, `login`, `logout`; `GET /api/auth/me` |
-| Jobs (UI)    | `POST` multipart → job; `GET` status; download via signed URL    |
-| Account      | профиль, `save_conversions`, API-ключ, files, shares             |
-| Public share | метаданные + download по token                                   |
+| Область       | Префикс (бэкенд §12)                                          |
+| ------------- | ------------------------------------------------------------- |
+| Auth          | `/api/auth/register`, `login`, `logout`, `me`                 |
+| Jobs (UI)     | `/api/jobs` — multipart, GET status, signed download          |
+| Account       | `/api/users/me`, `/api/api-keys`, `/api/files`, `/api/shares` |
+| Public share  | `/api/v1/public/s/:token`                                     |
+| Публичный API | `/api/v1/*` + `X-API-Key` — **не** из SPA                     |
 
 Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на `completed` / `failed` или таймаут
-60 с ([technical-task.md](./technical-task.md) §7.2, §13 #23).
+60 с ([technical-task.md](./technical-task.md) §7.2, §13 #23). Handshake (cookie, proxy, конверт
+ошибок) — бэкенд-план §17.
 
 ---
 
 ## 5. Auth: сессия, guard, формы входа/регистрации
 
-**Зачем:** ЛК и персональные настройки ([technical-task.md](./technical-task.md) §4.3, §6).
+**Зачем:** ЛК и персональные настройки ([technical-task.md](./technical-task.md) §4.3, §6). Живая
+сессия — после бэкенд-B ([backend-implementation-plan.md](./backend-implementation-plan.md) §4).
 
 | Шаг | Действие                                                                   | Nest? | Критерий готовности                | Статус      |
 | --- | -------------------------------------------------------------------------- | ----- | ---------------------------------- | ----------- |
@@ -169,18 +180,20 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 
 **Сейчас (без Nest):** §5.3–5.4 закрыты — клиентская валидация, submit никуда не уходит. `/api-docs`
 и unit — пропущены. Дальше без Nest не осталось обязательных пунктов.  
-**Критерий после Nest:** ручной проход register → account → logout → login.
+**Критерий после бэкенд-B:** ручной проход register → account → logout → login
+([backend-implementation-plan.md](./backend-implementation-plan.md) §4).
 
 ---
 
 ## 6. Ядро конвертации: `features/conversion`
 
 **Зачем:** одна операция = один файл; UI через jobs + polling ([architecture.md](./architecture.md)
-§4.1).
+§4.1). Upload/poll/download — после бэкенд-C
+([backend-implementation-plan.md](./backend-implementation-plan.md) §6–§8).
 
 | Шаг | Действие                                                                       | Nest? | Критерий готовности              | Статус |
 | --- | ------------------------------------------------------------------------------ | ----- | -------------------------------- | ------ |
-| 6.1 | Zustand store: route / file / error; `job` — после Nest                        | часть | Одно активное состояние операции | ✅     |
+| 6.1 | Zustand store: route / file / error; `job` — после бэкенд-C                    | часть | Одно активное состояние операции | ✅     |
 | 6.2 | Клиентская валидация до upload: 1 файл, ≤10 МБ, расширение под пару, не 0 байт | нет   | UC-05; тексты из §5.1            | ✅     |
 | 6.3 | Upload multipart + старт job                                                   | да    | Переход Selected → Uploading     | ⏸      |
 | 6.4 | Polling 2 с                                                                    | да    | Processing с индикатором         | ⏸      |
@@ -211,13 +224,15 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 Первый viewport: бренд + подзаголовок + сегмент + dropzone + один primary CTA. Без статистики и
 конкурирующих CTA ([DESIGN.md](./DESIGN.md) Do/Don't).
 
-**Сейчас:** Dropzone + валидация + CTA. **После Nest:** гость конвертирует один файл end-to-end.
+**Сейчас:** Dropzone + валидация + CTA. **После бэкенд-C:** гость конвертирует один файл end-to-end
+([backend-implementation-plan.md](./backend-implementation-plan.md) §6–§8).
 
 ---
 
 ## 8. Шаринг: кнопка + страница `/s/:token`
 
-**Зачем:** UC-06, §4.6, §9.
+**Зачем:** UC-06, §4.6, §9. Создать ссылку — после бэкенд-D
+([backend-implementation-plan.md](./backend-implementation-plan.md) §10).
 
 | Шаг | Действие                                                         | Nest? | Критерий готовности                      | Статус |
 | --- | ---------------------------------------------------------------- | ----- | ---------------------------------------- | ------ |
@@ -230,7 +245,7 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 
 **Сейчас (без Nest):** вёрстка доступной ссылки со статическими метаданными; `/s/gone`, `/s/expired`
 и `/s/revoked` показывают «Ссылка больше недоступна» без деталей владельца. Создание share и живые
-данные — после Nest.
+данные — после бэкенд-D ([backend-implementation-plan.md](./backend-implementation-plan.md) §10).
 
 ---
 
@@ -248,13 +263,13 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 | 4   | Список StoredFile         | Имя, тип, размер, дата, источник UI/API; скачать / поделиться / удалить | нет   | ✅ empty  |
 | 5   | Активные ShareLink        | URL, срок, файл; копировать / отозвать                                  | нет   | ✅ empty  |
 | 6   | Empty state               | Текст-онбординг без коллажей                                            | нет   | ✅        |
-| 7   | Выход                     | Кнопка в вёрстке; реальный logout — после Nest                          | да    | ✅ кнопка |
+| 7   | Выход                     | Кнопка в вёрстке; реальный logout — после бэкенд-B                      | да    | ✅ кнопка |
 
 Layout: mobile — одна колонка; desktop — настройки сверху/слева, списки ниже/справа, без
 дашборд-перегруза.
 
-**Критерий после Nest:** включить save → конвертация → файл в списке; отозвать share → `/s/:token`
-недоступна.
+**Критерий после бэкенд-E:** включить save → конвертация → файл в списке; отозвать share →
+`/s/:token` недоступна ([backend-implementation-plan.md](./backend-implementation-plan.md) §5, §9).
 
 **Сейчас (без Nest):** вёрстка всех блоков, клиентская валидация профиля, локальный UI ключа и
 Telegram. Списки пустые.
@@ -264,17 +279,18 @@ Telegram. Списки пустые.
 ## 10. Восстановление пароля
 
 **Зачем:** §4.4, UC-04. Живой Telegram Bot API — вне v1 ([tech-stack.md](./tech-stack.md) §6). Код
-сброса на стороне Nest позже; сейчас — формы и клиентская валидация.
+сброса — бэкенд-этап **G** ([backend-implementation-plan.md](./backend-implementation-plan.md) §11);
+сейчас — формы и клиентская валидация.
 
 | Шаг  | Страница           | Поведение                                       | Nest? | Статус |
 | ---- | ------------------ | ----------------------------------------------- | ----- | ------ |
-| 10.1 | `/forgot-password` | Форма email; нейтральный ответ — после Nest     | нет   | ✅     |
+| 10.1 | `/forgot-password` | Форма email; нейтральный ответ — после бэкенд-G | нет   | ✅     |
 | 10.2 | UX ожидания        | Инструкция открыть Telegram-бота                | нет   | ✅     |
 | 10.3 | `/reset-password`  | Код + новый пароль; клиентская валидация пароля | нет   | ✅     |
 | 10.4 | Успех              | Редирект на login                               | да    | ⏸      |
 
 **Сейчас (без Nest):** §10.1–10.3 закрыты — валидация email/кода/пароля, submit никуда не уходит.  
-**После Nest:** отправка кода, проверка TTL, редирект на login.
+**После бэкенд-G:** отправка кода, проверка TTL, редирект на login.
 
 ---
 
@@ -292,7 +308,8 @@ Telegram. Списки пустые.
 | Лимиты        | 10 МБ, 60 с, rate limits §7.6            | нет   | 🟡 кратко   |
 | CTA           | «Получить API-ключ» → register / account | нет   | ✅          |
 
-Страница публичная. Контент **статический** (TSX) по контрактам ТЗ — Nest не нужен.
+Страница публичная. Контент **статический** (TSX) по контрактам ТЗ и бэкенд-плану §12 — живой Nest
+для вёрстки docs не нужен; curl-примеры должны совпадать с каноном путей.
 
 ---
 
@@ -322,27 +339,31 @@ Telegram. Списки пустые.
 | Unit | Vitest     | Маппинг `error.code` → RU                                                             | да    | ⏸           |
 | E2E  | Playwright | Гость: convert одного файла; share link open/download; register → API-ключ виден в ЛК | да    | ⏸           |
 
-Unit по файлу и паролю — пропущено, можно вернуться отдельно. Остальное — после Nest.
+Unit по файлу и паролю — пропущено, можно вернуться отдельно. Маппинг ошибок и Playwright — после
+бэкенд-C…H ([backend-implementation-plan.md](./backend-implementation-plan.md) §15–§16).
 
 ---
 
 ## 14. Рекомендуемый порядок спринтов
 
-| Этап   | Содержание                | Результат                                                | Статус |
-| ------ | ------------------------- | -------------------------------------------------------- | ------ |
-| A      | §1–2, UI-kit без Dropzone | Тёмная тема, shell, примитивы                            | ✅     |
-| **A2** | **§0.1 — фронт без Nest** | Dropzone, валидация, экраны, a11y; docs и unit пропущены | 🟡     |
-| B      | §4–5 (после Nest)         | HTTP-клиент + сессия + guard                             | ⏸      |
-| C      | §6.3–6.6, §7 статус       | Конвертация на главной (гость)                           | ⏸      |
-| D      | §8.1                      | Share create                                             | ⏸      |
-| E      | §9 данные                 | Живой ЛК                                                 | ⏸      |
-| F      | §10.4                     | Recovery end-to-end                                      | ⏸      |
-| G      | §12 API-ошибки, e2e       | Полировка, Playwright                                    | ⏸      |
+Соответствие бэкенду — [backend-implementation-plan.md](./backend-implementation-plan.md) §16
+(колонка «Разблокирует фронт»).
 
-Моки не используем. Этап **A2** — всё, что можно закрыть до бэкенда. B–G — когда Nest отдаёт
-контракты.
+| Этап   | Содержание                | Ждёт бэкенд                             | Результат                                                | Статус |
+| ------ | ------------------------- | --------------------------------------- | -------------------------------------------------------- | ------ |
+| A      | §1–2, UI-kit без Dropzone | —                                       | Тёмная тема, shell, примитивы                            | ✅     |
+| **A2** | **§0.1 — фронт без Nest** | —                                       | Dropzone, валидация, экраны, a11y; docs и unit пропущены | 🟡     |
+| B      | §4–5                      | Бэкенд **B** (auth cookie)              | HTTP-клиент + сессия + guard                             | ⏸      |
+| C      | §6.3–6.6, §7 статус       | Бэкенд **C** (jobs, worker, download)   | Конвертация на главной (гость)                           | ⏸      |
+| D      | §8.1                      | Бэкенд **D** (shares)                   | Share create                                             | ⏸      |
+| E      | §9 данные                 | Бэкенд **E** (ключи, профиль, files)    | Живой ЛК                                                 | ⏸      |
+| F      | §10.4                     | Бэкенд **G** (Telegram mock + reset)    | Recovery end-to-end                                      | ⏸      |
+| G      | §12 API-ошибки, e2e       | Бэкенд **H** (429, TTL) + **I** (тесты) | Полировка, Playwright                                    | ⏸      |
 
-Легенда статусов: ✅ готово · 🟡 частично (вёрстка / заглушка) · ⬜ не начато · ⏸ ждём Nest /
+Моки не используем. Этап **A2** — всё, что можно закрыть до бэкенда. B–G — только после указанного
+этапа Nest. Пути не менять вразнобой: синхронизировать оба плана (бэкенд §17).
+
+Легенда статусов: ✅ готово · 🟡 частично (вёрстка / заглушка) · ⬜ не начато · ⏸ ждём бэкенд /
 пропущено.
 
 ---
@@ -351,15 +372,15 @@ Unit по файлу и паролю — пропущено, можно верн
 
 - [x] Все маршруты из §2 работают; Header/Footer везде
 - [x] Дизайн: тёмная тема, токены DESIGN, один primary CTA на экран главной
-- [ ] Гость: upload → poll → download → share (UC-01, UC-06) — после Nest
-- [ ] Auth: register/login/logout, «Запомнить меня», protected `/account` — после Nest
-- [x] ЛК: UI профиля, ключа, toggle, empty-списки (живые данные — после Nest)
-- [ ] Recovery: формы + клиентская валидация; проверка кода — после Nest
-- [ ] `/api-docs` с curl + fetch, лимитами и ошибками — пропущено
+- [ ] Гость: upload → poll → download → share (UC-01, UC-06) — после бэкенд-C/D
+- [ ] Auth: register/login/logout, «Запомнить меня», protected `/account` — после бэкенд-B
+- [x] ЛК: UI профиля, ключа, toggle, empty-списки (живые данные — после бэкенд-E)
+- [ ] Recovery: формы + клиентская валидация; проверка кода — после бэкенд-G
+- [ ] `/api-docs` с curl + fetch, лимитами и ошибками — пропущено (пути = бэкенд §12)
 - [x] A11y/адаптив без Nest: skip-link, `document.title`, 404, hit-area ≥44px
 - [ ] Ошибки UI на русском по матрице §5.1 (файл — ✅; login/register — ✅; recovery — ✅; share —
-      ✅; серверные — после Nest)
-- [ ] Unit (файл, пароль) — пропущено; Playwright — после Nest
+      ✅; серверные — после бэкенд-B/H)
+- [ ] Unit (файл, пароль) — пропущено; Playwright — после бэкенд-C…H
 - [x] Нет `X-API-Key` в localStorage; сессия только cookie
 - [x] Вне scope не реализовано: batch, светлая тема, живой Telegram Bot, 2FA
 
@@ -367,9 +388,10 @@ Unit по файлу и паролю — пропущено, можно верн
 
 ## 16. Связанные документы
 
-| Документ                                 | Роль                        |
-| ---------------------------------------- | --------------------------- |
-| [technical-task.md](./technical-task.md) | Продукт и сценарии          |
-| [architecture.md](./architecture.md)     | Слои и структура `apps/web` |
-| [tech-stack.md](./tech-stack.md)         | Зафиксированный стек        |
-| [DESIGN.md](./DESIGN.md)                 | Визуальная система          |
+| Документ                                                           | Роль                                     |
+| ------------------------------------------------------------------ | ---------------------------------------- |
+| [technical-task.md](./technical-task.md)                           | Продукт и сценарии                       |
+| [architecture.md](./architecture.md)                               | Слои и структура `apps/web`              |
+| [tech-stack.md](./tech-stack.md)                                   | Зафиксированный стек                     |
+| [DESIGN.md](./DESIGN.md)                                           | Визуальная система                       |
+| [backend-implementation-plan.md](./backend-implementation-plan.md) | План `apps/api`; контракт для этапов B–G |
