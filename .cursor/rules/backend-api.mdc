@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Backend (`apps/api`)
 
-NestJS + TypeORM + PostgreSQL ([stack](../../docs/tech-stack.md) §3). HTTP, worker, and TTL cron — **one process** (no Redis in v1). Modules & storage — [architecture](../../docs/architecture.md) §3.2–3.3. API & limits — [task](../../docs/technical-task.md) §7.
+NestJS + TypeORM + PostgreSQL ([stack](../../docs/tech-stack.md) §3). HTTP, worker, and TTL cron — **one process** (no Redis in v1). Modules & storage — [architecture](../../docs/architecture.md) §3.2–3.3. API & limits — [task](../../docs/technical-task.md) §7. Schema, indexes, queries, job claim — [database.mdc](./database.mdc).
 
 ## Modules
 

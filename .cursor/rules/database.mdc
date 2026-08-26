@@ -1,0 +1,94 @@
+---
+description: PostgreSQL + TypeORM — schema, indexes, queries, job queue, DB security. Use when writing entities, migrations, repositories, QueryBuilder, or SQL.
+globs: apps/api/**/*.{ts,js}
+alwaysApply: false
+---
+
+# Database (PostgreSQL + TypeORM)
+
+Source of truth: [backend plan](../../docs/backend-implementation-plan.md) §3, [architecture](../../docs/architecture.md) §3–4, [task](../../docs/technical-task.md) §3.2. Patterns adapted from [ECC database-reviewer](https://github.com/affaan-m/ECC/blob/main/agents/database-reviewer.md) / Supabase postgres-best-practices (MIT).
+
+PostgreSQL is **local install**, not Docker Compose. Queue is **rows in `ConversionJob`**, not Redis. Bytes live on disk (`storage/`); PG stores **metadata only**. `DATABASE_URL` from env — never hardcode.
+
+Dev: TypeORM `synchronize: true`. Prod: `synchronize: false` + migrations.
+
+## Schema
+
+- PK: **UUID** (task §3.2). Columns: `lowercase_snake_case` in PG; entity props camelCase.
+- Types: `timestamptz` (not `timestamp`), `text` for unbounded strings, `boolean` for flags. `varchar` only with a real limit (email, `ApiKey.prefix`).
+- Constraints: PK, FK with `ON DELETE`, `NOT NULL`, `UNIQUE`, `CHECK` for enums (`queued|processing|completed|failed`, `ui|api`).
+- Nullable by design: `ConversionJob.userId`, `ShareLink.ownerUserId` (guests).
+- Secrets in DB: **hash only** — `passwordHash`, `ApiKey.keyHash`, reset `codeHash`. Never plaintext keys, passwords, JWTs.
+
+Entities: `User`, `ConversionJob`, `StoredFile`, `ShareLink`, `ApiKey`, `PasswordReset`, `TelegramBind`.
+
+## Indexes (required)
+
+Always index FKs. Plan §3 minimum:
+
+| Column | Why |
+| ---- | --- |
+| `user.email` | unique, case-insensitive login |
+| `conversion_job.status` | worker queue |
+| `share_link.token` | public `/s/:token` |
+| `api_key.prefix` | lookup; compare by **hash**, not prefix |
+| `share_link.expires_at`, `password_reset.expires_at` | cleanup cron |
+
+Partial indexes for soft-revoke: `WHERE revoked_at IS NULL` on `ApiKey`, `ShareLink`. Composite: equality first, then range.
+
+## Queries
+
+- TypeORM repository / QueryBuilder / parameterized `repo.query(sql, params)`. **Never** concatenate user input into SQL.
+- No `SELECT *` in production paths. Select columns you need.
+- No N+1: `leftJoinAndSelect` / QueryBuilder join, not `findOne` in a loop.
+- Lists (`files`, shares): cursor (`WHERE id > :last`), not `OFFSET` on growing tables.
+- Batch inserts; never insert in a loop.
+- Short transactions: **never** hold a DB lock during Sharp / LibreOffice (60s timeout). Claim job, commit, then convert.
+
+```ts
+// ❌ SQL injection + SELECT *
+await ds.query(`SELECT * FROM "user" WHERE email = '${email}'`);
+
+// ✅ parameterized / repository
+await userRepo.findOne({ where: { email } });
+```
+
+## Worker (CRITICAL)
+
+Claim is atomic `queued` → `processing` with **`FOR UPDATE SKIP LOCKED`** ([plan](../../docs/backend-implementation-plan.md) §8.2). Two ticks must not take the same job. Lock order: `ORDER BY id` (or `created_at, id`).
+
+```ts
+const job = await em
+  .createQueryBuilder(ConversionJob, 'j')
+  .setLock('pessimistic_partial_write') // FOR UPDATE SKIP LOCKED
+  .where('j.status = :status', { status: 'queued' })
+  .orderBy('j.createdAt', 'ASC')
+  .addOrderBy('j.id', 'ASC')
+  .getOne();
+```
+
+v1: one Nest process (HTTP + worker + cron). Still use `SKIP LOCKED` — required for correctness and later scale ([architecture](../../docs/architecture.md) §5).
+
+## Security (not Supabase RLS)
+
+Do **not** add Postgres RLS / `auth.uid()`. Tenancy is Nest: JWT cookie, `X-API-Key`, share-token. Verify ownership of job / file / key **before** read or write ([security.mdc](./security.mdc)).
+
+Least privilege for the app role: no `GRANT ALL`. Revoke public-schema extras. Do not log SQL with passwords, full API keys, or JWTs.
+
+## Diagnostics
+
+```bash
+psql "$DATABASE_URL" -c "SELECT query, mean_exec_time, calls FROM pg_stat_statements ORDER BY mean_exec_time DESC LIMIT 10;"
+psql "$DATABASE_URL" -c "SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC;"
+psql "$DATABASE_URL" -c "SELECT indexrelname, idx_scan, idx_tup_read FROM pg_stat_user_indexes ORDER BY idx_scan DESC;"
+```
+
+`EXPLAIN ANALYZE` on queue claim, share-by-token, files list. Flag Seq Scan on growing tables.
+
+## Anti-patterns
+
+- `int` PKs; `timestamp` without time zone; files/blobs in PostgreSQL
+- Unparameterized SQL; `synchronize: true` in prod
+- Redis/BullMQ queue (out of v1); holding a transaction across conversion
+- RLS/`auth.uid()` copied from Supabase; `GRANT ALL` to the app user
+- OFFSET pagination on jobs/files; N+1 `find` in loops
