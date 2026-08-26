@@ -10,16 +10,17 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev": "pnpm --filter @convertly/web dev",
-    "build": "pnpm --filter @convertly/web build",
-    "lint": "pnpm --filter @convertly/web lint",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
     "preview": "pnpm --filter @convertly/web preview",
-    "test": "pnpm --filter @convertly/web test",
-    "test:watch": "pnpm --filter @convertly/web test:watch",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
     "test:e2e": "pnpm --filter @convertly/web test:e2e"
   },
   "devDependencies": {
     "oxlint": "^1.75.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "turbo": "^2.5.8"
   }
 }

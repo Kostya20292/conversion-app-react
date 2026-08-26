@@ -20,7 +20,8 @@
     "**/coverage/**",
     "**/playwright-report/**",
     "**/test-results/**",
-    "storage/**"
+    "storage/**",
+    "apps/api/dist/**"
   ],
   "env": {
     "browser": true,
@@ -66,10 +67,24 @@
         "**/*.config.{ts,js,mjs,cjs}",
         "**/playwright.config.ts",
         "**/vite.config.ts",
-        "**/vitest.config.ts"
+        "**/vitest.config.ts",
+        "**/vitest.config.mts"
       ],
       "env": {
         "node": true
+      }
+    },
+    {
+      "files": ["apps/api/**/*.ts"],
+      "env": {
+        "node": true
+      },
+      "rules": {
+        "import/no-relative-parent-imports": "off",
+        "react/rules-of-hooks": "off",
+        "react/only-export-components": "off",
+        "react/no-danger": "off",
+        "react/react-compiler": "off"
       }
     },
     {

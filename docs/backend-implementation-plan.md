@@ -12,7 +12,7 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** не начат. `apps/api` ещё нет. Фронт закрыл этап A2
+**Прогресс:** §1 фундамент готов. Дальше — §2 ошибки и ValidationPipe. Фронт закрыл этап A2
 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
 фронтовые B–G.
 
@@ -20,8 +20,8 @@
 
 ## 0. Исходное состояние
 
-Уже есть: monorepo pnpm (`apps/*`), `apps/web` (SPA), `docs/`, `.gitignore` на `storage/` и `.env`.
-Нет: Nest-приложения, `turbo.json` (заявлен в стеке), корневых скриптов для API.
+Уже есть: monorepo pnpm (`apps/*`), `apps/web` (SPA), `apps/api` (Nest, §1), `turbo.json`, `docs/`,
+`.gitignore` на `storage/` и `.env`.
 
 **Цель плана:** поднять `apps/api` слой за слоем, с проверяемым результатом на каждом этапе, и
 отдать фронту стабильный HTTP-контракт.
@@ -34,13 +34,13 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: каркас → auth → гостевая конвертация
 
-Пока нет Nest — закрываем фундамент, общий слой ошибок и каналы, без которых фронт не может
-подключить `src/api/`. Моки HTTP **не** делаем (как на фронте).
+Фундамент Nest закрыт. Дальше — общий слой ошибок и каналы, без которых фронт не может подключить
+`src/api/`. Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
-| 1   | `apps/api`: Nest + pnpm `@convertly/api`, корневые скрипты, Vitest ≠ Jest | §1          | ⬜     |
-| 2   | Env, CORS, TypeORM → локальный PostgreSQL, каталоги `storage/`            | §1          | ⬜     |
+| 1   | `apps/api`: Nest + pnpm `@convertly/api`, корневые скрипты, Vitest ≠ Jest | §1          | ✅     |
+| 2   | Env, CORS, TypeORM → локальный PostgreSQL, каталоги `storage/`            | §1          | ✅     |
 | 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ⬜     |
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ⬜     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ⬜     |
@@ -58,13 +58,13 @@ IP), не публичный `/api/v1`.
 
 | Шаг | Действие                                                                                             | Критерий готовности                                          | Статус |
 | --- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------ |
-| 1.1 | `apps/api` через Nest CLI, пакет `@convertly/api`, TypeScript strict                                 | `pnpm --filter @convertly/api start:dev` слушает порт        | ⬜     |
-| 1.2 | Корневые скрипты: `dev` / `build` / `lint` / `test` для web+api; завести `turbo.json` по стеку       | Из корня поднимаются оба приложения                          | ⬜     |
-| 1.3 | `ConfigModule` + `.env.example`: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `STORAGE_ROOT`, `PORT` | Секреты только из env; `.env` не в git                       | ⬜     |
-| 1.4 | TypeORM + PostgreSQL (локальная установка). Dev: `synchronize: true`. Prod: `synchronize: false`     | При старте таблицы создаются                                 | ⬜     |
-| 1.5 | CORS: allowlist origin SPA, `credentials: true`. Cookie-сессия через Vite proxy `/api` → Nest        | Preflight ок; cookie не требует `SameSite=None` на localhost | ⬜     |
-| 1.6 | Каталоги `storage/uploads`, `storage/results`, `storage/profile` (корень репо, не `apps/api`)        | Папки есть, в git только через `.gitignore`                  | ⬜     |
-| 1.7 | `GET /api/health` → `{ status: "ok" }`                                                               | Проверка, что процесс жив                                    | ⬜     |
+| 1.1 | `apps/api` через Nest CLI, пакет `@convertly/api`, TypeScript strict                                 | `pnpm --filter @convertly/api start:dev` слушает порт        | ✅     |
+| 1.2 | Корневые скрипты: `dev` / `build` / `lint` / `test` для web+api; завести `turbo.json` по стеку       | Из корня поднимаются оба приложения                          | ✅     |
+| 1.3 | `ConfigModule` + `.env.example`: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `STORAGE_ROOT`, `PORT` | Секреты только из env; `.env` не в git                       | ✅     |
+| 1.4 | TypeORM + PostgreSQL (локальная установка). Dev: `synchronize: true`. Prod: `synchronize: false`     | При старте таблицы создаются                                 | ✅     |
+| 1.5 | CORS: allowlist origin SPA, `credentials: true`. Cookie-сессия через Vite proxy `/api` → Nest        | Preflight ок; cookie не требует `SameSite=None` на localhost | ✅     |
+| 1.6 | Каталоги `storage/uploads`, `storage/results`, `storage/profile` (корень репо, не `apps/api`)        | Папки есть, в git только через `.gitignore`                  | ✅     |
+| 1.7 | `GET /api/health` → `{ status: "ok" }`                                                               | Проверка, что процесс жив                                    | ✅     |
 
 Глобальный префикс: `api`. Тесты — **Vitest** (не Jest из шаблона Nest). Линтер — Oxlint, как в
 монорепо.
@@ -420,7 +420,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 
 | Этап  | Содержание                           | Разблокирует фронт      | Статус |
 | ----- | ------------------------------------ | ----------------------- | ------ |
-| **A** | §1–3 фундамент, ошибки, сущности     | —                       | ⬜     |
+| **A** | §1–3 фундамент, ошибки, сущности     | —                       | 🟡     |
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ⬜     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ⬜     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
