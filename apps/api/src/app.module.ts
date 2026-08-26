@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from './common/common.module';
 import { type AppEnv, envFilePaths, validateEnv } from './config/env';
 import { HealthModule } from './health/health.module';
 
@@ -21,6 +22,7 @@ import { HealthModule } from './health/health.module';
         logging: false,
       }),
     }),
+    CommonModule,
     HealthModule,
   ],
 })

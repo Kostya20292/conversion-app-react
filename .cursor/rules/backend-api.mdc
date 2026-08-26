@@ -8,6 +8,14 @@ alwaysApply: false
 
 NestJS + TypeORM + PostgreSQL ([stack](../../docs/tech-stack.md) §3). HTTP, worker, and TTL cron — **one process** (no Redis in v1). Modules & storage — [architecture](../../docs/architecture.md) §3.2–3.3. API & limits — [task](../../docs/technical-task.md) §7. Schema, indexes, queries, job claim — [database.mdc](./database.mdc).
 
+## Imports / alias `@/`
+
+Алиас `@/` → `src/` (`tsconfig.json` + Vitest + Nest SWC). Oxlint: `import/no-relative-parent-imports`.
+
+- Кросс-папка: `import { ApiException } from '@/common/errors/api-exception'`.
+- Та же папка и дети модуля: `./jwt-auth.guard`, `./errors/api-exception.filter`.
+- Никогда `../` — вместо этого `@/`.
+
 ## Modules
 
 `auth`, `users`, `api-keys`, `jobs`, `files`, `shares`, `conversion`, `storage`, `worker`, `cleanup`, `telegram` (mock), `common`.

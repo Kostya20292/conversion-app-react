@@ -12,7 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1 фундамент готов. Дальше — §2 ошибки и ValidationPipe. Фронт закрыл этап A2
+**Прогресс:** §1–2 готовы (фундамент, конверт ошибок, ValidationPipe, throttler, каркас guards).
+Дальше — §3 сущности TypeORM. Фронт закрыл этап A2
 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
 фронтовые B–G.
 
@@ -34,14 +35,14 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: каркас → auth → гостевая конвертация
 
-Фундамент Nest закрыт. Дальше — общий слой ошибок и каналы, без которых фронт не может подключить
-`src/api/`. Моки HTTP **не** делаем (как на фронте).
+Ошибки, ValidationPipe и каркас guards закрыты. Дальше — сущности TypeORM (§3), затем auth cookie
+(§4). Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
 | 1   | `apps/api`: Nest + pnpm `@convertly/api`, корневые скрипты, Vitest ≠ Jest | §1          | ✅     |
 | 2   | Env, CORS, TypeORM → локальный PostgreSQL, каталоги `storage/`            | §1          | ✅     |
-| 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ⬜     |
+| 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ✅     |
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ⬜     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ⬜     |
 | 6   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
@@ -80,11 +81,11 @@ IP), не публичный `/api/v1`.
 
 | Шаг | Действие                                                       | Критерий готовности                             | Статус |
 | --- | -------------------------------------------------------------- | ----------------------------------------------- | ------ |
-| 2.1 | Exception filter → `{ error: { code, message } }`              | Нет Nest-stack в теле ответа клиенту            | ⬜     |
-| 2.2 | `ValidationPipe`: whitelist, forbid non-whitelisted, transform | Лишние поля DTO → `invalid_request`             | ⬜     |
-| 2.3 | Коды из §7.5: HTTP + `error.code` совпадают с таблицей ТЗ      | `file_too_large` → 413 и т.д.                   | ⬜     |
-| 2.4 | Каркас `@nestjs/throttler` (лимиты навешиваем в §13)           | Модуль подключён                                | ⬜     |
-| 2.5 | `JwtAuthGuard` (cookie) и `ApiKeyGuard` (`X-API-Key`)          | Неверный ключ / нет сессии → `401 unauthorized` | ⬜     |
+| 2.1 | Exception filter → `{ error: { code, message } }`              | Нет Nest-stack в теле ответа клиенту            | ✅     |
+| 2.2 | `ValidationPipe`: whitelist, forbid non-whitelisted, transform | Лишние поля DTO → `invalid_request`             | ✅     |
+| 2.3 | Коды из §7.5: HTTP + `error.code` совпадают с таблицей ТЗ      | `file_too_large` → 413 и т.д.                   | ✅     |
+| 2.4 | Каркас `@nestjs/throttler` (лимиты навешиваем в §13)           | Модуль подключён                                | ✅     |
+| 2.5 | `JwtAuthGuard` (cookie) и `ApiKeyGuard` (`X-API-Key`)          | Неверный ключ / нет сессии → `401 unauthorized` | ✅     |
 
 **Конверт (обязательный):**
 

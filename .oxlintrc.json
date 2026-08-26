@@ -80,7 +80,6 @@
         "node": true
       },
       "rules": {
-        "import/no-relative-parent-imports": "off",
         "react/rules-of-hooks": "off",
         "react/only-export-components": "off",
         "react/no-danger": "off",
