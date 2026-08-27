@@ -12,10 +12,9 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–2 готовы (фундамент, конверт ошибок, ValidationPipe, throttler, каркас guards).
-Дальше — §3 сущности TypeORM. Фронт закрыл этап A2
-([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
-фронтовые B–G.
+**Прогресс:** §1–3 готовы (фундамент, конверт ошибок, сущности TypeORM). Дальше — §4 auth cookie.
+Фронт закрыл этап A2 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14).
+Этот план разблокирует фронтовые B–G.
 
 ---
 
@@ -33,17 +32,16 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: каркас → auth → гостевая конвертация
+## 0.1. Текущий фокус: auth cookie → гостевая конвертация
 
-Ошибки, ValidationPipe и каркас guards закрыты. Дальше — сущности TypeORM (§3), затем auth cookie
-(§4). Моки HTTP **не** делаем (как на фронте).
+Сущности TypeORM закрыты. Дальше — auth cookie (§4). Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
 | 1   | `apps/api`: Nest + pnpm `@convertly/api`, корневые скрипты, Vitest ≠ Jest | §1          | ✅     |
 | 2   | Env, CORS, TypeORM → локальный PostgreSQL, каталоги `storage/`            | §1          | ✅     |
 | 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ✅     |
-| 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ⬜     |
+| 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ✅     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ⬜     |
 | 6   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
 
@@ -112,13 +110,13 @@ IP), не публичный `/api/v1`.
 
 | Entity          | Ключевые поля (не полный DDL)                                                                                         | Статус |
 | --------------- | --------------------------------------------------------------------------------------------------------------------- | ------ |
-| `User`          | email (unique, ci), passwordHash, displayName, telegramId, saveConversions default `false`, tokenVersion, timestamps  | ⬜     |
-| `ConversionJob` | userId nullable, sourceFormat, targetFormat, status, sourceOfRequest `ui`\|`api`, errorCode, sizes, paths, timestamps | ⬜     |
-| `StoredFile`    | userId, jobId, name, storageKey, size, source `ui`\|`api`                                                             | ⬜     |
-| `ShareLink`     | token unique, ownerUserId nullable, jobId / fileId, expiresAt, revokedAt                                              | ⬜     |
-| `ApiKey`        | userId, keyHash, prefix (`cv_live_ab12…`), createdAt, revokedAt                                                       | ⬜     |
-| `PasswordReset` | userId, codeHash, expiresAt (15 мин), consumedAt                                                                      | ⬜     |
-| `TelegramBind`  | userId, bindToken, expiresAt (для mock deep-link)                                                                     | ⬜     |
+| `User`          | email (unique, ci), passwordHash, displayName, telegramId, saveConversions default `false`, tokenVersion, timestamps  | ✅     |
+| `ConversionJob` | userId nullable, sourceFormat, targetFormat, status, sourceOfRequest `ui`\|`api`, errorCode, sizes, paths, timestamps | ✅     |
+| `StoredFile`    | userId, jobId, name, storageKey, size, source `ui`\|`api`                                                             | ✅     |
+| `ShareLink`     | token unique, ownerUserId nullable, jobId / fileId, expiresAt, revokedAt                                              | ✅     |
+| `ApiKey`        | userId, keyHash, prefix (`cv_live_ab12…`), createdAt, revokedAt                                                       | ✅     |
+| `PasswordReset` | userId, codeHash, expiresAt (15 мин), consumedAt                                                                      | ✅     |
+| `TelegramBind`  | userId, bindToken, expiresAt (для mock deep-link)                                                                     | ✅     |
 
 Статусы job: `queued` → `processing` → `completed` \| `failed`. Других статусов нет.
 
@@ -421,7 +419,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 
 | Этап  | Содержание                           | Разблокирует фронт      | Статус |
 | ----- | ------------------------------------ | ----------------------- | ------ |
-| **A** | §1–3 фундамент, ошибки, сущности     | —                       | 🟡     |
+| **A** | §1–3 фундамент, ошибки, сущности     | —                       | ✅     |
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ⬜     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ⬜     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
