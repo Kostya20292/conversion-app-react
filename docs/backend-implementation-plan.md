@@ -12,9 +12,10 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–3 готовы (фундамент, конверт ошибок, сущности TypeORM). Дальше — §4 auth cookie.
-Фронт закрыл этап A2 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14).
-Этот план разблокирует фронтовые B–G.
+**Прогресс:** §1–4 готовы (фундамент, ошибки, сущности, auth cookie). Дальше — §6–8 гостевая
+конвертация. Фронт закрыл этап A2
+([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
+фронтовые B–G.
 
 ---
 
@@ -32,9 +33,10 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: auth cookie → гостевая конвертация
+## 0.1. Текущий фокус: гостевая конвертация
 
-Сущности TypeORM закрыты. Дальше — auth cookie (§4). Моки HTTP **не** делаем (как на фронте).
+Auth cookie закрыт. Дальше — storage + UI-jobs + worker (§6–§8). Моки HTTP **не** делаем (как на
+фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -42,7 +44,7 @@ IP), не публичный `/api/v1`.
 | 2   | Env, CORS, TypeORM → локальный PostgreSQL, каталоги `storage/`            | §1          | ✅     |
 | 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ✅     |
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ✅     |
-| 5   | Auth cookie: register / login / logout / me                               | §4          | ⬜     |
+| 5   | Auth cookie: register / login / logout / me                               | §4          | ✅     |
 | 6   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
@@ -131,12 +133,12 @@ IP), не публичный `/api/v1`.
 
 | Шаг | Действие                                                                                         | Критерий готовности                                | Статус |
 | --- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------- | ------ |
-| 4.1 | `POST /api/auth/register`: имя, email, пароль; argon2; `save_conversions=false`; автологин       | 201 + cookie; повтор email → «уже зарегистрирован» | ⬜     |
-| 4.2 | Правила пароля на сервере: ≥8, ≥1 буква, ≥1 цифра                                                | Слабый пароль → 400, без записи User               | ⬜     |
-| 4.3 | `POST /api/auth/login`: email+пароль; «Запомнить меня»                                           | Неверные данные → одно сообщение, без enumeration  | ⬜     |
-| 4.4 | Cookie: httpOnly; `Secure` в prod; `SameSite=Lax`; remember → maxAge **30 суток**, иначе session | Фронтовый чекбокс управляет TTL                    | ⬜     |
-| 4.5 | `GET /api/auth/me`                                                                               | 200 с user либо 401                                | ⬜     |
-| 4.6 | `POST /api/auth/logout`                                                                          | Cookie снята; `tokenVersion++` (инвалидация JWT)   | ⬜     |
+| 4.1 | `POST /api/auth/register`: имя, email, пароль; argon2; `save_conversions=false`; автологин       | 201 + cookie; повтор email → «уже зарегистрирован» | ✅     |
+| 4.2 | Правила пароля на сервере: ≥8, ≥1 буква, ≥1 цифра                                                | Слабый пароль → 400, без записи User               | ✅     |
+| 4.3 | `POST /api/auth/login`: email+пароль; «Запомнить меня»                                           | Неверные данные → одно сообщение, без enumeration  | ✅     |
+| 4.4 | Cookie: httpOnly; `Secure` в prod; `SameSite=Lax`; remember → maxAge **30 суток**, иначе session | Фронтовый чекбокс управляет TTL                    | ✅     |
+| 4.5 | `GET /api/auth/me`                                                                               | 200 с user либо 401                                | ✅     |
+| 4.6 | `POST /api/auth/logout`                                                                          | Cookie снята; `tokenVersion++` (инвалидация JWT)   | ✅     |
 | 4.7 | Смена пароля / email (см. §5) тоже бампит `tokenVersion`                                         | Старая cookie после смены пароля не проходит       | ⬜     |
 
 Login throttle — §13 (10 / 15 мин / IP).
@@ -420,7 +422,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 | Этап  | Содержание                           | Разблокирует фронт      | Статус |
 | ----- | ------------------------------------ | ----------------------- | ------ |
 | **A** | §1–3 фундамент, ошибки, сущности     | —                       | ✅     |
-| **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ⬜     |
+| **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ⬜     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ⬜     |
@@ -457,7 +459,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 - [ ] `apps/api` стартует, TypeORM видит PostgreSQL, `storage/` не в git
 - [ ] Гость: `POST /api/jobs` → poll → signed download (UC-01)
 - [ ] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
-- [ ] Пароли argon2; login без enumeration; правила пароля на сервере
+- [x] Пароли argon2; login без enumeration; правила пароля на сервере
 - [ ] `/api/v1/*` только с ключом; hash+prefix в БД
 - [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
 - [ ] Share: создать (гость и user), public GET, revoke → 410

@@ -10,7 +10,8 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev": "turbo run dev",
+    "dev": "bash scripts/with-postgres.sh turbo run dev",
+    "dev:api": "bash scripts/with-postgres.sh turbo run dev --filter=@convertly/api",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "preview": "pnpm --filter @convertly/web preview",
