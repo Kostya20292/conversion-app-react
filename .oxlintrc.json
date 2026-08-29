@@ -20,7 +20,7 @@
     "**/coverage/**",
     "**/playwright-report/**",
     "**/test-results/**",
-    "storage/**",
+    "/storage/**",
     "apps/api/dist/**"
   ],
   "env": {
@@ -90,7 +90,8 @@
       "files": ["**/*.{test,spec}.{ts,tsx}"],
       "rules": {
         "vitest/no-disabled-tests": "warn",
-        "vitest/warn-todo": "warn"
+        "vitest/warn-todo": "warn",
+        "vitest/require-to-throw-message": "off"
       }
     },
     {

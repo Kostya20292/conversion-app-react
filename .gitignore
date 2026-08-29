@@ -14,7 +14,7 @@ dist-ssr
 coverage
 playwright-report
 test-results
-storage
+/storage/
 .turbo
 
 # Env & secrets

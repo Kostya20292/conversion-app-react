@@ -10,6 +10,7 @@ import { FilesModule } from './files/files.module';
 import { HealthModule } from './health/health.module';
 import { JobsModule } from './jobs/jobs.module';
 import { SharesModule } from './shares/shares.module';
+import { StorageModule } from './file-store/storage.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { UsersModule } from './users/users.module';
 
@@ -37,6 +38,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     ApiKeysModule,
     JobsModule,
+    StorageModule,
     FilesModule,
     SharesModule,
     TelegramModule,
