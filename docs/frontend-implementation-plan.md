@@ -14,9 +14,9 @@
 API.
 
 **Прогресс:** этапы **A**, **A2** и **B** закрыты (UI без Nest + HTTP-клиент + сессия cookie +
-guard). `/api-docs` и часть unit — по-прежнему пропущены. Дальше — этап **C** (upload / poll /
-download), когда Nest закроет jobs и worker
-([backend-implementation-plan.md](./backend-implementation-plan.md) §16).
+guard). `/api-docs` и часть unit — по-прежнему пропущены. Nest **§7** (POST/GET jobs, queued) уже
+есть. Дальше — этап **C** (upload / poll / download), когда Nest закроет worker
+([backend-implementation-plan.md](./backend-implementation-plan.md) §8, §16).
 
 ---
 
@@ -37,9 +37,10 @@ react-dropzone, Vitest, Playwright, Oxlint, React Compiler. Каркас пап�
 
 ---
 
-## 0.1. Текущий фокус: ждём бэкенд C (jobs)
+## 0.1. Текущий фокус: ждём бэкенд C (worker)
 
-Сессия SPA живая. Дальше без Nest jobs на главной конвертация не стартует. Моки HTTP **не** делаем.
+Сессия SPA живая. Nest POST/GET jobs уже есть, job остаётся `queued`. На главной конвертация не
+стартует, пока нет worker/download. Моки HTTP **не** делаем.
 
 | #   | Что делать сейчас                                                   | Где в плане        | Статус      |
 | --- | ------------------------------------------------------------------- | ------------------ | ----------- |
@@ -55,9 +56,9 @@ react-dropzone, Vitest, Playwright, Oxlint, React Compiler. Каркас пап�
 | 10  | Полные `/api-docs`: эндпоинты, curl + fetch, ошибки, лимиты         | §11                | ⏸ пропущено |
 | 11  | Unit: валидация файла и правила пароля                              | §13                | ⏸ пропущено |
 
-**Ждём Nest C:** §6.3–6.6 (upload / poll / download). Позже: share create (бэкенд D), живые данные
-ЛК кроме ключа/сессии (бэкенд E), recovery (бэкенд G). Соответствие этапов —
-[backend-implementation-plan.md](./backend-implementation-plan.md) §16.
+**Ждём Nest §8 (остаток C):** worker + signed download, затем фронт §6.3–6.6. Позже: share create
+(бэкенд D), живые данные ЛК кроме ключа/сессии (бэкенд E), recovery (бэкенд G). Соответствие этапов
+— [backend-implementation-plan.md](./backend-implementation-plan.md) §16.
 
 ---
 
@@ -187,8 +188,7 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 ## 6. Ядро конвертации: `features/conversion`
 
 **Зачем:** одна операция = один файл; UI через jobs + polling ([architecture.md](./architecture.md)
-§4.1). Upload/poll/download — после бэкенд-C
-([backend-implementation-plan.md](./backend-implementation-plan.md) §6–§8).
+§4.1). Upload/poll/download на главной — после бэкенд-§8 (HTTP jobs уже есть, §7).
 
 | Шаг | Действие                                                                       | Nest? | Критерий готовности              | Статус |
 | --- | ------------------------------------------------------------------------------ | ----- | -------------------------------- | ------ |
@@ -223,8 +223,8 @@ Polling: **каждые 2 с**, пока `queued` \| `processing`; стоп на
 Первый viewport: бренд + подзаголовок + сегмент + dropzone + один primary CTA. Без статистики и
 конкурирующих CTA ([DESIGN.md](./DESIGN.md) Do/Don't).
 
-**Сейчас:** Dropzone + валидация + CTA; гостевой баннер скрывается после входа. **После бэкенд-C:**
-гость конвертирует один файл end-to-end
+**Сейчас:** Dropzone + валидация + CTA; гостевой баннер скрывается после входа. Nest jobs (queued)
+уже есть; CTA ещё заглушка. **После бэкенд-§8:** гость конвертирует один файл end-to-end
 ([backend-implementation-plan.md](./backend-implementation-plan.md) §6–§8).
 
 ---
@@ -351,16 +351,16 @@ Unit по файлу и паролю — пропущено, можно верн
 Соответствие бэкенду — [backend-implementation-plan.md](./backend-implementation-plan.md) §16
 (колонка «Разблокирует фронт»).
 
-| Этап   | Содержание                | Ждёт бэкенд                             | Результат                                                | Статус |
-| ------ | ------------------------- | --------------------------------------- | -------------------------------------------------------- | ------ |
-| A      | §1–2, UI-kit без Dropzone | —                                       | Тёмная тема, shell, примитивы                            | ✅     |
-| **A2** | **§0.1 — фронт без Nest** | —                                       | Dropzone, валидация, экраны, a11y; docs и unit пропущены | 🟡     |
-| B      | §4–5                      | Бэкенд **B** (auth cookie)              | HTTP-клиент + сессия + guard                             | ✅     |
-| C      | §6.3–6.6, §7 статус       | Бэкенд **C** (jobs, worker, download)   | Конвертация на главной (гость)                           | ⏸      |
-| D      | §8.1                      | Бэкенд **D** (shares)                   | Share create                                             | ⏸      |
-| E      | §9 данные                 | Бэкенд **E** (ключи, профиль, files)    | Живой ЛК                                                 | ⏸      |
-| F      | §10.4                     | Бэкенд **G** (Telegram mock + reset)    | Recovery end-to-end                                      | ⏸      |
-| G      | §12 API-ошибки, e2e       | Бэкенд **H** (429, TTL) + **I** (тесты) | Полировка, Playwright                                    | ⏸      |
+| Этап   | Содержание                | Ждёт бэкенд                                   | Результат                                                | Статус |
+| ------ | ------------------------- | --------------------------------------------- | -------------------------------------------------------- | ------ |
+| A      | §1–2, UI-kit без Dropzone | —                                             | Тёмная тема, shell, примитивы                            | ✅     |
+| **A2** | **§0.1 — фронт без Nest** | —                                             | Dropzone, валидация, экраны, a11y; docs и unit пропущены | 🟡     |
+| B      | §4–5                      | Бэкенд **B** (auth cookie)                    | HTTP-клиент + сессия + guard                             | ✅     |
+| C      | §6.3–6.6, §7 статус       | Бэкенд **C** (worker, download; jobs HTTP ✅) | Конвертация на главной (гость)                           | ⏸      |
+| D      | §8.1                      | Бэкенд **D** (shares)                         | Share create                                             | ⏸      |
+| E      | §9 данные                 | Бэкенд **E** (ключи, профиль, files)          | Живой ЛК                                                 | ⏸      |
+| F      | §10.4                     | Бэкенд **G** (Telegram mock + reset)          | Recovery end-to-end                                      | ⏸      |
+| G      | §12 API-ошибки, e2e       | Бэкенд **H** (429, TTL) + **I** (тесты)       | Полировка, Playwright                                    | ⏸      |
 
 Моки не используем. Этап **A2** — UI до бэкенда (docs/unit пропущены). **B** закрыт. C–G — только
 после указанного этапа Nest. Пути не менять вразнобой: синхронизировать оба плана (бэкенд §17).

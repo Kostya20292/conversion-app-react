@@ -13,6 +13,7 @@ import { ApiExceptionFilter } from './errors/api-exception.filter';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { CookieAuthGuard } from './guards/cookie-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { OptionalCookieAuthGuard } from './guards/optional-cookie-auth.guard';
 import { createValidationPipe } from './pipes/create-validation-pipe';
 
 @Global()
@@ -36,6 +37,7 @@ import { createValidationPipe } from './pipes/create-validation-pipe';
   providers: [
     JwtAuthGuard,
     CookieAuthGuard,
+    OptionalCookieAuthGuard,
     ApiKeyGuard,
     { provide: API_KEY_AUTHENTICATOR, useClass: DbApiKeyAuthenticator },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
@@ -47,6 +49,7 @@ import { createValidationPipe } from './pipes/create-validation-pipe';
     TypeOrmModule,
     JwtAuthGuard,
     CookieAuthGuard,
+    OptionalCookieAuthGuard,
     ApiKeyGuard,
     API_KEY_AUTHENTICATOR,
   ],

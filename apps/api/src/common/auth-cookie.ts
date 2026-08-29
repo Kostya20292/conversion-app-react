@@ -2,6 +2,24 @@ import type { CookieOptions } from 'express';
 
 export const AUTH_COOKIE_NAME = 'access_token';
 
+export type CookieRequest = {
+  cookies?: Record<string, string | undefined>;
+  headers: {
+    cookie?: string | string[];
+  };
+};
+
+export const readAccessToken = (request: CookieRequest): string | undefined => {
+  const fromCookies = request.cookies?.[AUTH_COOKIE_NAME];
+  if (typeof fromCookies === 'string' && fromCookies.length > 0) {
+    return fromCookies;
+  }
+
+  const header = request.headers.cookie;
+  const cookieHeader = Array.isArray(header) ? header[0] : header;
+  return readCookie(cookieHeader, AUTH_COOKIE_NAME);
+};
+
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type AuthCookieParams = {

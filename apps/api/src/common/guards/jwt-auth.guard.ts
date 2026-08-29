@@ -1,22 +1,13 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
-import { AUTH_COOKIE_NAME, readCookie } from '@/common/auth-cookie';
+import { readAccessToken } from '@/common/auth-cookie';
 import { ApiException } from '@/common/errors/api-exception';
 import type { JwtAccessPayload } from '@/common/jwt-access-payload';
 
 type RequestWithCookies = Request & {
   cookies?: Record<string, string | undefined>;
   user?: JwtAccessPayload;
-};
-
-const readAccessToken = (request: RequestWithCookies): string | undefined => {
-  const fromCookies = request.cookies?.[AUTH_COOKIE_NAME];
-  if (typeof fromCookies === 'string' && fromCookies.length > 0) {
-    return fromCookies;
-  }
-
-  return readCookie(request.headers.cookie, AUTH_COOKIE_NAME);
 };
 
 const isJwtAccessPayload = (value: unknown): value is JwtAccessPayload => {

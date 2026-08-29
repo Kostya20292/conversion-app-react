@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–6 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи,
-storage/валидация). Дальше — §7–8 UI-jobs и worker. Фронт закрыл этапы A2 и **B**
+**Прогресс:** §1–7 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи, storage, HTTP
+jobs). Дальше — §8 worker и download. Фронт закрыл этапы A2 и **B**
 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
 фронтовые C–G.
 
@@ -35,8 +35,8 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: гостевая конвертация
 
-Auth cookie и профиль/ключи закрыты, storage §6 готов. Дальше — UI-jobs + worker (§7–§8). Фронт B
-(сессия) уже живой. Моки HTTP **не** делаем (как на фронте).
+Auth cookie, профиль/ключи и HTTP jobs закрыты. Дальше — worker + download (§8). Фронт B (сессия)
+уже живой. Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -46,7 +46,8 @@ Auth cookie и профиль/ключи закрыты, storage §6 готов.
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ✅     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ✅     |
 | 6   | Users и API-ключи: PATCH /me, ключ при register, reissue                  | §5          | ✅     |
-| 7   | UI-jobs: upload → queued → worker → download (гость)                      | §7–§8       | ⬜     |
+| 7   | UI + v1 jobs: upload → queued, GET статуса, владение                      | §7          | ✅     |
+| 8   | Worker + signed download (гость)                                          | §8          | ⬜     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -212,15 +213,18 @@ PNG→JPG: прозрачность на белый фон (зафиксиров
 
 | Шаг | Действие                                                                                           | Критерий готовности                               | Статус |
 | --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------ |
-| 7.1 | `POST …/jobs` multipart: `file` + `target_format`                                                  | 202 `{ id, status: "queued" }`; файл в `uploads/` | ⬜     |
-| 7.2 | `GET …/jobs/:id` — владелец (cookie / ключ) или 404                                                | Чужой job → `not_found` (без утечки)              | ⬜     |
-| 7.3 | Поля completed: `source_format`, `target_format`, `download_url`, `expires_at`, `saved_to_profile` | Как пример ТЗ §7.2                                | ⬜     |
-| 7.4 | `source_of_request`: `ui` на `/api/jobs`, `api` на `/api/v1/jobs`                                  | В StoredFile потом видно источник                 | ⬜     |
-| 7.5 | Гость: `user_id = null`; user: из JWT; API: из ключа                                               | Guest job не попадает в ЛК                        | ⬜     |
+| 7.1 | `POST …/jobs` multipart: `file` + `target_format`                                                  | 202 `{ id, status: "queued" }`; файл в `uploads/` | ✅     |
+| 7.2 | `GET …/jobs/:id` — владелец (cookie / ключ) или 404                                                | Чужой job → `not_found` (без утечки)              | ✅     |
+| 7.3 | Поля completed: `source_format`, `target_format`, `download_url`, `expires_at`, `saved_to_profile` | Как пример ТЗ §7.2                                | 🟡     |
+| 7.4 | `source_of_request`: `ui` на `/api/jobs`, `api` на `/api/v1/jobs`                                  | В StoredFile потом видно источник                 | ✅     |
+| 7.5 | Гость: `user_id = null`; user: из JWT; API: из ключа                                               | Guest job не попадает в ЛК                        | ✅     |
 
 `target_format`: `png` \| `jpg` \| `pdf` \| `docx`.
 
 Polling интервал **2 с** — ответственность клиента, не сервера.
+
+**Сейчас:** POST/GET на `/api/jobs` и `/api/v1/jobs`; job остаётся `queued`. GET уже отдаёт
+`source_format` / `target_format`. `download_url`, `expires_at`, `saved_to_profile` — после §8.
 
 ---
 
@@ -405,13 +409,14 @@ SPA-контракт (cookie), который ждёт
 
 | Тип         | Инструмент | Где                         | Минимальный набор v1                                                              | Статус  |
 | ----------- | ---------- | --------------------------- | --------------------------------------------------------------------------------- | ------- |
-| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL       | ⬜      |
-| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | ⬜      |
+| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL       | 🟡      |
+| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | 🟡      |
 | E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК (когда фронт на этапе G) | ⏸ фронт |
 
-Unit по валидации можно писать сразу с §4–§6. HTTP — когда есть эндпоинт. LibreOffice: HTTP-кейс
-DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла кейса — гонять локально, в среде без
-бинаря не ослаблять assert.
+Unit: пароль, пары, magic bytes, 10 МБ, hash ключа — есть; signed token TTL — с §8. HTTP:
+register/login, guest POST job + GET, API 401 без ключа — есть; share 410 — с §10. LibreOffice:
+HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла кейса — гонять локально, в
+среде без бинаря не ослаблять assert.
 
 ---
 
@@ -427,13 +432,13 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | 🟡     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
-| **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ⬜     |
+| **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | 🟡     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
 
-Этап **F** можно делать сразу после E (ключ уже есть) или параллельно с C для `/api/v1/jobs`, но без
-ключа v1 бесполезен — не начинать v1 раньше §5.5.
+Этап **C:** storage + HTTP jobs готовы; worker/download — §8. Этап **F:** `POST/GET /api/v1/jobs` и
+`GET /api/v1/me` уже живые; files/shares v1 — позже.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -457,18 +462,20 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 
 ## 18. Definition of Done (бэкенд v1)
 
-- [ ] `apps/api` стартует, TypeORM видит PostgreSQL, `storage/` не в git
-- [ ] Гость: `POST /api/jobs` → poll → signed download (UC-01)
+- [x] `apps/api` стартует, TypeORM видит PostgreSQL, `storage/` не в git
+- [ ] Гость: `POST /api/jobs` → poll → signed download (UC-01) — POST/poll queued есть; download —
+      §8
 - [x] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
 - [x] Пароли argon2; login без enumeration; правила пароля на сервере
-- [ ] `/api/v1/*` только с ключом; hash+prefix в БД
+- [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs и `GET /me`; files/shares v1 — позже
 - [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
 - [ ] Share: создать (гость и user), public GET, revoke → 410
-- [ ] MIME по magic bytes; 1 файл; 10 МБ; 60 с timeout
+- [ ] MIME по magic bytes; 1 файл; 10 МБ — ✅; 60 с timeout — §8
 - [ ] Rate limits §7.6; cron TTL исходников/результатов/shares
 - [ ] Telegram — mock; живой бот не требуется
-- [ ] Ошибки API на английском в конверте `{ error: { code, message } }`
-- [ ] Unit + HTTP-тесты минимума §15 зелёные
+- [x] Ошибки API на английском в конверте `{ error: { code, message } }`
+- [ ] Unit + HTTP-тесты минимума §15 зелёные — часть есть (auth, jobs queued); share/signed token —
+      позже
 - [ ] Нет раздачи `storage/` статикой; нет секретов в репо
 
 ---

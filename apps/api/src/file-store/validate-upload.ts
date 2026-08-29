@@ -2,7 +2,7 @@ import { isSupportedConversion } from '@/common/domain/conversion-pair';
 import { FILE_FORMATS, type FileFormat } from '@/common/domain/file-format';
 import { ApiException } from '@/common/errors/api-exception';
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 const FORMAT_BY_EXTENSION: Record<string, FileFormat> = {
   jpg: 'jpg',
