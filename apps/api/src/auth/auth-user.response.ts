@@ -8,6 +8,10 @@ export type AuthUserResponse = {
   telegram_id: string | null;
 };
 
+export type RegisterResponse = AuthUserResponse & {
+  api_key: string;
+};
+
 export const toAuthUserResponse = (user: User): AuthUserResponse => ({
   id: user.id,
   email: user.email,

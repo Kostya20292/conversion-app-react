@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–4 готовы (фундамент, ошибки, сущности, auth cookie). Дальше — §6–8 гостевая
-конвертация. Фронт закрыл этап A2
+**Прогресс:** §1–5 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи). Дальше — §6–8
+гостевая конвертация. Фронт закрыл этап A2
 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
 фронтовые B–G.
 
@@ -35,8 +35,8 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: гостевая конвертация
 
-Auth cookie закрыт. Дальше — storage + UI-jobs + worker (§6–§8). Моки HTTP **не** делаем (как на
-фронте).
+Auth cookie и профиль/ключи закрыты. Дальше — storage + UI-jobs + worker (§6–§8). Моки HTTP **не**
+делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -45,7 +45,8 @@ Auth cookie закрыт. Дальше — storage + UI-jobs + worker (§6–§8
 | 3   | Конверт ошибок `{ error: { code, message } }`, ValidationPipe             | §2          | ✅     |
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ✅     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ✅     |
-| 6   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
+| 6   | Users и API-ключи: PATCH /me, ключ при register, reissue                  | §5          | ✅     |
+| 7   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -139,7 +140,7 @@ Auth cookie закрыт. Дальше — storage + UI-jobs + worker (§6–§8
 | 4.4 | Cookie: httpOnly; `Secure` в prod; `SameSite=Lax`; remember → maxAge **30 суток**, иначе session | Фронтовый чекбокс управляет TTL                    | ✅     |
 | 4.5 | `GET /api/auth/me`                                                                               | 200 с user либо 401                                | ✅     |
 | 4.6 | `POST /api/auth/logout`                                                                          | Cookie снята; `tokenVersion++` (инвалидация JWT)   | ✅     |
-| 4.7 | Смена пароля / email (см. §5) тоже бампит `tokenVersion`                                         | Старая cookie после смены пароля не проходит       | ⬜     |
+| 4.7 | Смена пароля / email (см. §5) тоже бампит `tokenVersion`                                         | Старая cookie после смены пароля не проходит       | ✅     |
 
 Login throttle — §13 (10 / 15 мин / IP).
 
@@ -156,13 +157,13 @@ Forgot/reset — §12 (после mock Telegram). На этапе 4 достат
 
 | Шаг | Действие                                                                                                   | Критерий готовности                   | Статус |
 | --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------ |
-| 5.1 | `PATCH /api/users/me` — display name                                                                       | Имя в `GET /me` обновлено             | ⬜     |
-| 5.2 | Смена email: текущий пароль + уникальность                                                                 | Занятый email → понятная ошибка       | ⬜     |
-| 5.3 | Смена пароля: текущий + новый (те же правила)                                                              | Старый пароль больше не логинит       | ⬜     |
-| 5.4 | Toggle `save_conversions`; выкл **не** удаляет StoredFile и **не** отзывает share                          | Как §8 ТЗ                             | ⬜     |
-| 5.5 | При регистрации сразу создать **один** активный ApiKey; plaintext **один раз** в ответе register / reissue | В БД только hash + prefix             | ⬜     |
-| 5.6 | `GET /api/api-keys` — prefix + маска, без полного ключа                                                    | Повторный GET не возвращает plaintext | ⬜     |
-| 5.7 | `POST /api/api-keys/reissue` — старый revoked, новый plaintext один раз                                    | Старый `X-API-Key` → 401              | ⬜     |
+| 5.1 | `PATCH /api/users/me` — display name                                                                       | Имя в `GET /me` обновлено             | ✅     |
+| 5.2 | Смена email: текущий пароль + уникальность                                                                 | Занятый email → понятная ошибка       | ✅     |
+| 5.3 | Смена пароля: текущий + новый (те же правила)                                                              | Старый пароль больше не логинит       | ✅     |
+| 5.4 | Toggle `save_conversions`; выкл **не** удаляет StoredFile и **не** отзывает share                          | Как §8 ТЗ                             | ✅     |
+| 5.5 | При регистрации сразу создать **один** активный ApiKey; plaintext **один раз** в ответе register / reissue | В БД только hash + prefix             | ✅     |
+| 5.6 | `GET /api/api-keys` — prefix + маска, без полного ключа                                                    | Повторный GET не возвращает plaintext | ✅     |
+| 5.7 | `POST /api/api-keys/reissue` — старый revoked, новый plaintext один раз                                    | Старый `X-API-Key` → 401              | ✅     |
 
 Формат ключа: `cv_live_` + криптослучайная строка. Сравнение — по hash (не по prefix).
 
@@ -425,7 +426,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ⬜     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
-| **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ⬜     |
+| **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ⬜     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
@@ -458,7 +459,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 
 - [ ] `apps/api` стартует, TypeORM видит PostgreSQL, `storage/` не в git
 - [ ] Гость: `POST /api/jobs` → poll → signed download (UC-01)
-- [ ] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
+- [x] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
 - [x] Пароли argon2; login без enumeration; правила пароля на сервере
 - [ ] `/api/v1/*` только с ключом; hash+prefix в БД
 - [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые

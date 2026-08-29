@@ -1,7 +1,7 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
-import { ApiException } from '@/common/errors/api-exception';
 import type { User } from '@/users/user.entity';
 import type { AuthRequest } from './auth-request';
+import { ApiException } from './errors/api-exception';
 
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): User => {

@@ -4,32 +4,25 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { hash, verify } from 'argon2';
 import type { Response } from 'express';
-import { QueryFailedError, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { ApiKeysService } from '@/api-keys/api-keys.service';
 import { AUTH_COOKIE_NAME, createAuthCookieOptions } from '@/common/auth-cookie';
 import { ApiException } from '@/common/errors/api-exception';
+import { isPostgresUniqueViolation } from '@/common/is-postgres-unique-violation';
 import type { AppEnv } from '@/config/env';
 import { User } from '@/users/user.entity';
-import { toAuthUserResponse, type AuthUserResponse } from './auth-user.response';
-import { isPasswordValid } from './password-policy';
+import {
+  toAuthUserResponse,
+  type AuthUserResponse,
+  type RegisterResponse,
+} from './auth-user.response';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
+import { isPasswordValid } from './password-policy';
 
 const EMAIL_TAKEN_MESSAGE = 'This email is already registered';
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password';
 const JWT_EXPIRES_IN = '30d';
-
-const isPostgresUniqueViolation = (error: unknown): boolean => {
-  if (!(error instanceof QueryFailedError)) {
-    return false;
-  }
-
-  const driverError: unknown = error.driverError;
-  if (typeof driverError !== 'object' || driverError === null || !('code' in driverError)) {
-    return false;
-  }
-
-  return driverError.code === '23505';
-};
 
 const verifyPassword = async (passwordHash: string, password: string): Promise<boolean> => {
   try {
@@ -45,9 +38,11 @@ export class AuthService {
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService<AppEnv, true>,
+    private readonly apiKeys: ApiKeysService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async register(dto: RegisterDto, response: Response): Promise<AuthUserResponse> {
+  async register(dto: RegisterDto, response: Response): Promise<RegisterResponse> {
     if (!isPasswordValid(dto.password)) {
       throw new ApiException('invalid_request');
     }
@@ -58,17 +53,27 @@ export class AuthService {
       throw new ApiException('invalid_request', EMAIL_TAKEN_MESSAGE);
     }
 
-    const user = this.users.create({
-      email,
-      passwordHash: await hash(dto.password),
-      displayName: dto.display_name,
-      telegramId: null,
-      saveConversions: false,
-      tokenVersion: 0,
-    });
+    const passwordHash = await hash(dto.password);
 
     try {
-      await this.users.save(user);
+      const { user, apiKey } = await this.dataSource.transaction(async (manager) => {
+        const users = manager.getRepository(User);
+        const created = users.create({
+          email,
+          passwordHash,
+          displayName: dto.display_name,
+          telegramId: null,
+          saveConversions: false,
+          tokenVersion: 0,
+        });
+        const saved = await users.save(created);
+        const issued = await this.apiKeys.createForUser(saved.id, manager);
+
+        return { user: saved, apiKey: issued.plaintext };
+      });
+
+      await this.attachSessionCookie(response, user, false);
+      return { ...toAuthUserResponse(user), api_key: apiKey };
     } catch (error: unknown) {
       if (isPostgresUniqueViolation(error)) {
         throw new ApiException('invalid_request', EMAIL_TAKEN_MESSAGE);
@@ -76,9 +81,6 @@ export class AuthService {
 
       throw error;
     }
-
-    await this.attachSessionCookie(response, user, false);
-    return toAuthUserResponse(user);
   }
 
   async login(dto: LoginDto, response: Response): Promise<AuthUserResponse> {

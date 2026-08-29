@@ -1,10 +1,10 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { AuthRequest } from '@/common/auth-request';
 import { ApiException } from '@/common/errors/api-exception';
-import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { User } from '@/users/user.entity';
-import type { AuthRequest } from './auth-request';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Injectable()
 export class CookieAuthGuard implements CanActivate {
