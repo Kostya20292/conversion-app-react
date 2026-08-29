@@ -1,8 +1,11 @@
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ApiRequestError, NetworkError } from '@/api/http';
+import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
+import { Spinner } from '@/components/Spinner/Spinner';
 import {
   REGISTER_FIELD_ORDER,
   type RegisterFormErrors,
@@ -21,13 +24,18 @@ const REGISTER_FIELD_IDS = {
 } as const;
 
 export const RegisterPage = () => {
+  const status = useAuthStore((state) => state.status);
+  const register = useAuthStore((state) => state.register);
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [fieldErrors, setFieldErrors] = useState<RegisterFormErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isEmailTaken, setIsEmailTaken] = useState(false);
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
-  const [isClientAccepted, setIsClientAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -68,32 +76,36 @@ export const RegisterPage = () => {
   const handleDisplayNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setDisplayName(value);
-    setIsClientAccepted(false);
+    setFormError(null);
+    setIsEmailTaken(false);
     syncFieldErrors(['displayName'], { ...getFormValues(), displayName: value });
   };
 
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setEmail(value);
-    setIsClientAccepted(false);
+    setFormError(null);
+    setIsEmailTaken(false);
     syncFieldErrors(['email'], { ...getFormValues(), email: value });
   };
 
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setPassword(value);
-    setIsClientAccepted(false);
+    setFormError(null);
+    setIsEmailTaken(false);
     syncFieldErrors(['password', 'passwordConfirm'], { ...getFormValues(), password: value });
   };
 
   const handlePasswordConfirmChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setPasswordConfirm(value);
-    setIsClientAccepted(false);
+    setFormError(null);
+    setIsEmailTaken(false);
     syncFieldErrors(['passwordConfirm'], { ...getFormValues(), passwordConfirm: value });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitAttempted(true);
 
@@ -102,13 +114,53 @@ export const RegisterPage = () => {
 
     const firstErrorField = getFirstErrorField(nextErrors, REGISTER_FIELD_ORDER);
     if (firstErrorField) {
-      setIsClientAccepted(false);
+      setFormError(null);
+      setIsEmailTaken(false);
       fieldRefs[firstErrorField].current?.focus();
       return;
     }
 
-    setIsClientAccepted(true);
+    setIsSubmitting(true);
+    setFormError(null);
+    setIsEmailTaken(false);
+
+    try {
+      await register({ displayName, email, password });
+      navigate('/account', { replace: true });
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.code === 'internal_error') {
+        return;
+      }
+
+      if (error instanceof ApiRequestError && error.code === 'invalid_request') {
+        setIsEmailTaken(true);
+        setFormError(error.userMessage);
+        return;
+      }
+
+      if (error instanceof ApiRequestError || error instanceof NetworkError) {
+        setFormError(error.userMessage);
+        return;
+      }
+
+      setFormError('Этот email уже зарегистрирован');
+      setIsEmailTaken(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (status === 'loading') {
+    return (
+      <div className="container narrowPage">
+        <Spinner label="Проверяем сессию" />
+      </div>
+    );
+  }
+
+  if (status === 'authenticated') {
+    return <Navigate to="/account" replace />;
+  }
 
   return (
     <div className="container narrowPage">
@@ -116,7 +168,7 @@ export const RegisterPage = () => {
         <h1 className={styles.title}>Регистрация</h1>
         <p className={styles.lead}>Создайте аккаунт, чтобы сохранять файлы и получить API-ключ.</p>
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
           <Input
             id={REGISTER_FIELD_IDS.displayName}
             ref={displayNameRef}
@@ -169,12 +221,20 @@ export const RegisterPage = () => {
           <Alert variant="info">
             Привязка Telegram для восстановления пароля будет доступна позже в личном кабинете.
           </Alert>
-          {isClientAccepted && (
-            <Alert variant="info" live>
-              Регистрация подключится на следующем этапе.
+          {formError && (
+            <Alert variant="error" live>
+              {formError}
+              {isEmailTaken && (
+                <>
+                  {' '}
+                  <Link className={styles.errorLink} to="/login">
+                    Войти
+                  </Link>
+                </>
+              )}
             </Alert>
           )}
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
             Зарегистрироваться
           </Button>
         </form>

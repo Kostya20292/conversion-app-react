@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/app/AppLayout';
+import { RequireAuth } from '@/app/RequireAuth';
 import { AccountPage } from '@/pages/Account/AccountPage';
 import { ApiDocsPage } from '@/pages/ApiDocs/ApiDocsPage';
 import { ForgotPasswordPage } from '@/pages/ForgotPassword/ForgotPasswordPage';
@@ -20,7 +21,14 @@ export const router = createBrowserRouter([
       { path: 'register', element: <RegisterPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
-      { path: 'account', element: <AccountPage /> },
+      {
+        path: 'account',
+        element: (
+          <RequireAuth>
+            <AccountPage />
+          </RequireAuth>
+        ),
+      },
       { path: 's/:token', element: <SharePage /> },
       { path: 'api-docs', element: <ApiDocsPage /> },
       { path: '*', element: <NotFoundPage /> },

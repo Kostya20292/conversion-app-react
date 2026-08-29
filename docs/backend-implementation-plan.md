@@ -13,9 +13,9 @@
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
 **Прогресс:** §1–6 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи,
-storage/валидация). Дальше — §7–8 UI-jobs и worker. Фронт закрыл этап A2
+storage/валидация). Дальше — §7–8 UI-jobs и worker. Фронт закрыл этапы A2 и **B**
 ([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
-фронтовые B–G.
+фронтовые C–G.
 
 ---
 
@@ -35,8 +35,8 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: гостевая конвертация
 
-Auth cookie и профиль/ключи закрыты. Дальше — storage + UI-jobs + worker (§6–§8). Моки HTTP **не**
-делаем (как на фронте).
+Auth cookie и профиль/ключи закрыты, storage §6 готов. Дальше — UI-jobs + worker (§7–§8). Фронт B
+(сессия) уже живой. Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -46,7 +46,7 @@ Auth cookie и профиль/ключи закрыты. Дальше — storag
 | 4   | Сущности User / Job / File / Share / ApiKey                               | §3          | ✅     |
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ✅     |
 | 6   | Users и API-ключи: PATCH /me, ключ при register, reissue                  | §5          | ✅     |
-| 7   | UI-jobs: upload → queued → worker → download (гость)                      | §6–§8       | ⬜     |
+| 7   | UI-jobs: upload → queued → worker → download (гость)                      | §7–§8       | ⬜     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -424,7 +424,7 @@ DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смы
 | ----- | ------------------------------------ | ----------------------- | ------ |
 | **A** | §1–3 фундамент, ошибки, сущности     | —                       | ✅     |
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
-| **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ⬜     |
+| **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | 🟡     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ⬜     |

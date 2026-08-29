@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Alert } from '@/components/Alert/Alert';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { listApiKeysRequest } from '@/api/api-keys';
+import { ApiRequestError, NetworkError } from '@/api/http';
+import { useAuthStore } from '@/app/authStore';
 import { Button } from '@/components/Button/Button';
 import { Modal } from '@/components/Modal/Modal';
 import { Toast } from '@/components/Toast/Toast';
@@ -16,11 +18,42 @@ import styles from './AccountPage.module.scss';
 const EMPTY_FILES: StoredFile[] = [];
 
 export const AccountPage = () => {
-  const [saveConversions, setSaveConversions] = useState(false);
+  const navigate = useNavigate();
+  const issuedApiKey = useAuthStore((state) => state.issuedApiKey);
+  const saveConversions = useAuthStore((state) => state.user?.saveConversions) ?? false;
+  const logout = useAuthStore((state) => state.logout);
+  const [listedApiKey, setListedApiKey] = useState<string | null>(null);
   const [shares, setShares] = useState<ShareLinkItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<StoredFile | null>(null);
   const [shareToRevoke, setShareToRevoke] = useState<ShareLinkItem | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [saveConversionsOverride, setSaveConversionsOverride] = useState<boolean | null>(null);
+  const saveConversionsChecked = saveConversionsOverride ?? saveConversions;
+
+  useEffect(() => {
+    if (issuedApiKey) {
+      return;
+    }
+
+    const controller = new AbortController();
+    void listApiKeysRequest({ signal: controller.signal })
+      .then((response) => {
+        const activeKey = response.keys[0];
+        if (activeKey) {
+          setListedApiKey(activeKey.masked_key);
+        }
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [issuedApiKey]);
 
   const handleNotify = (message: string) => {
     setToastMessage(message);
@@ -43,8 +76,26 @@ export const AccountPage = () => {
     handleNotify(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
   };
 
-  const handleLogout = () => {
-    handleNotify('Выход подключится на следующем этапе.');
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      navigate('/', { replace: true });
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.code === 'internal_error') {
+        return;
+      }
+
+      if (error instanceof ApiRequestError || error instanceof NetworkError) {
+        handleNotify(error.userMessage);
+        return;
+      }
+
+      handleNotify('Не удалось выйти. Попробуйте ещё раз.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleConfirmDeleteFile = () => {
@@ -60,19 +111,21 @@ export const AccountPage = () => {
     setShareToRevoke(null);
   };
 
+  const displayedApiKey = issuedApiKey ?? listedApiKey ?? undefined;
+
   return (
     <div className={`container ${styles.page}`}>
       <h1 className={styles.title}>Личный кабинет</h1>
       <p className={styles.lead}>Профиль, API-ключ и сохранённые файлы.</p>
 
-      <Alert variant="info" className={styles.notice}>
-        Страница пока без авторизации. Guard и данные с API появятся на этапе B.
-      </Alert>
-
       <div className={styles.layout}>
         <div className={styles.settings}>
           <AccountProfileSection onNotify={handleNotify} />
-          <AccountApiKeySection onNotify={handleNotify} />
+          <AccountApiKeySection
+            onNotify={handleNotify}
+            apiKey={displayedApiKey}
+            initiallyVisible={Boolean(issuedApiKey)}
+          />
           <section className={styles.card} aria-labelledby="save-title">
             <h2 id="save-title" className={styles.srOnly}>
               Сохранение конвертаций
@@ -81,8 +134,8 @@ export const AccountPage = () => {
               id="save-conversions"
               label="Сохранять конвертации в профиле"
               description="Выключение не удаляет уже сохранённые файлы"
-              checked={saveConversions}
-              onChange={(event) => setSaveConversions(event.target.checked)}
+              checked={saveConversionsChecked}
+              onChange={(event) => setSaveConversionsOverride(event.target.checked)}
             />
           </section>
         </div>
@@ -103,7 +156,12 @@ export const AccountPage = () => {
       </div>
 
       <div className={styles.footerActions}>
-        <Button variant="tertiary" onClick={handleLogout}>
+        <Button
+          variant="tertiary"
+          onClick={() => void handleLogout()}
+          disabled={isLoggingOut}
+          aria-busy={isLoggingOut}
+        >
           Выйти
         </Button>
         <Link to="/" className={styles.link}>

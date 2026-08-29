@@ -33,7 +33,8 @@
   font-size: var(--text-body-sm-size);
 }
 
-.footer a {
+.footer a,
+.errorLink {
   display: inline-flex;
   align-items: center;
   min-height: var(--control-height);

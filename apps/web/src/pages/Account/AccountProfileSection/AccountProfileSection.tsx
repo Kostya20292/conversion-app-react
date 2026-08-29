@@ -1,4 +1,5 @@
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
+import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
@@ -23,16 +24,17 @@ const FIELD_IDS = {
 } as const;
 
 export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) => {
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
+  const user = useAuthStore((state) => state.user);
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [savedEmail, setSavedEmail] = useState('');
+  const [savedEmail, setSavedEmail] = useState(user?.email ?? '');
   const [fieldErrors, setFieldErrors] = useState<AccountProfileFormErrors>({});
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
   const [isClientAccepted, setIsClientAccepted] = useState(false);
-  const [isTelegramBound, setIsTelegramBound] = useState(false);
+  const [isTelegramBound, setIsTelegramBound] = useState(Boolean(user?.telegramId));
   const [isUnbindModalOpen, setIsUnbindModalOpen] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);

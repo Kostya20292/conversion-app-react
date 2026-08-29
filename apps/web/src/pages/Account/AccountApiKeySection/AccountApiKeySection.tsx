@@ -13,10 +13,15 @@ const createPlaceholderApiKey = (): string => {
   return `cv_live_placeholder_${suffix}`;
 };
 
-export const AccountApiKeySection = ({ onNotify }: AccountApiKeySectionProps) => {
-  const [apiKey, setApiKey] = useState(INITIAL_PLACEHOLDER_KEY);
-  const [isKeyVisible, setIsKeyVisible] = useState(false);
+export const AccountApiKeySection = ({
+  onNotify,
+  apiKey: apiKeyProp,
+  initiallyVisible = false,
+}: AccountApiKeySectionProps) => {
+  const [reissuedKey, setReissuedKey] = useState<string | null>(null);
+  const [isKeyVisible, setIsKeyVisible] = useState(initiallyVisible);
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false);
+  const apiKey = reissuedKey ?? apiKeyProp ?? INITIAL_PLACEHOLDER_KEY;
 
   const displayedKey = isKeyVisible ? apiKey : maskApiKey(apiKey);
 
@@ -38,7 +43,7 @@ export const AccountApiKeySection = ({ onNotify }: AccountApiKeySectionProps) =>
   };
 
   const handleReissueKey = () => {
-    setApiKey(createPlaceholderApiKey());
+    setReissuedKey(createPlaceholderApiKey());
     setIsKeyVisible(true);
     onNotify('Новый ключ показан один раз. Сохранение на сервере — позже.');
   };

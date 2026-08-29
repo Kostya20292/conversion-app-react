@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
 import { Banner } from '@/components/Banner/Banner';
 import { Button } from '@/components/Button/Button';
@@ -19,6 +20,7 @@ export const HomePage = () => {
   const clearFile = useConversionStore((state) => state.clearFile);
   const canConvert = Boolean(file) && !error;
   const [isConvertAcknowledged, setIsConvertAcknowledged] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.status) === 'authenticated';
 
   const handleRouteChange = (nextRoute: ConversionRoute) => {
     setIsConvertAcknowledged(false);
@@ -76,17 +78,19 @@ export const HomePage = () => {
         )}
       </section>
 
-      <section className={`container ${styles.section}`}>
-        <Banner
-          action={
-            <Link to="/login" className={styles.bannerLink}>
-              Войти
-            </Link>
-          }
-        >
-          Войдите, чтобы сохранять файлы в профиле, управлять ссылками и пользоваться API.
-        </Banner>
-      </section>
+      {!isAuthenticated && (
+        <section className={`container ${styles.section}`}>
+          <Banner
+            action={
+              <Link to="/login" className={styles.bannerLink}>
+                Войти
+              </Link>
+            }
+          >
+            Войдите, чтобы сохранять файлы в профиле, управлять ссылками и пользоваться API.
+          </Banner>
+        </section>
+      )}
 
       <section className={`container ${styles.section}`} aria-labelledby="how-title">
         <h2 id="how-title" className={styles.sectionTitle}>
@@ -129,7 +133,7 @@ export const HomePage = () => {
           <Link to="/api-docs" className={styles.textLink}>
             Открыть API docs
           </Link>
-          <Link to="/register" className={styles.textLink}>
+          <Link to={isAuthenticated ? '/account' : '/register'} className={styles.textLink}>
             Получить ключ
           </Link>
         </div>
