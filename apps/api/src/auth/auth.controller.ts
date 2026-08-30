@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { CurrentUser } from '@/common/current-user.decorator';
+import { ApiThrottlerGuard } from '@/common/guards/api-throttler.guard';
 import { CookieAuthGuard } from '@/common/guards/cookie-auth.guard';
 import type { User } from '@/users/user.entity';
 import type { AuthUserResponse, RegisterResponse } from './auth-user.response';
@@ -24,6 +25,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ApiThrottlerGuard)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) response: Response,

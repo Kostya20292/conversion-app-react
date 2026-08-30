@@ -15,6 +15,7 @@ import {
 import type { AuthenticatedApiKey } from '@/common/api-key.authenticator';
 import { CurrentApiKey } from '@/common/current-api-key.decorator';
 import { ApiKeyGuard } from '@/common/guards/api-key.guard';
+import { ApiThrottlerGuard } from '@/common/guards/api-throttler.guard';
 import { toStreamableFile, type JobCreatedResponse, type JobStatusResponse } from './job-response';
 import { JobFileInterceptor, readTargetFormat, toUploadFiles } from './job-upload';
 import { JobsService } from './jobs.service';
@@ -26,6 +27,7 @@ export class V1JobsController {
 
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(ApiThrottlerGuard)
   @UseInterceptors(JobFileInterceptor)
   async create(
     @UploadedFile() file: unknown,

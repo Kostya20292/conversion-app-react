@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { AuthModule } from './auth/auth.module';
+import { CleanupModule } from './cleanup/cleanup.module';
 import { CommonModule } from './common/common.module';
 import { type AppEnv, envFilePaths, validateEnv } from './config/env';
 import { resolveTypeOrmDatabaseUrl } from './config/test-database';
@@ -39,6 +40,7 @@ import { WorkerModule } from './worker/worker.module';
       }),
     }),
     CommonModule,
+    CleanupModule,
     ConversionModule,
     HealthModule,
     UsersModule,

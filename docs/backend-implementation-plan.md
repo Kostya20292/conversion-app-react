@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–11 готовы (этап **G**: Telegram mock + reset). Дальше — rate limit + cron (§13,
-этап **H**) и добор тестов (§15, этап **I**). Фронт закрыл A2, **B–E** и **F** (recovery).
+**Прогресс:** §1–13 готовы (этап **H**: rate limit + TTL-cron). Дальше — добор тестов (§15, этап
+**I**) и фронт **G** (429/TTL, Playwright). Фронт закрыл A2, **B–F**.
 
 ---
 
@@ -31,10 +31,11 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: rate limit и TTL-cron
+## 0.1. Текущий фокус: тесты и фронт G
 
-Auth cookie, jobs, worker, signed download, shares, StoredFile, `/api/v1` и **recovery (Telegram
-mock)** закрыты. Дальше — §13 (rate limit + cron). Фронт **F** закрыт.
+Auth cookie, jobs, worker, signed download, shares, StoredFile, `/api/v1`, recovery и **rate limit
+
+- TTL-cron** закрыты. Дальше — §15 (этап **I**) и фронт **G**.
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -49,6 +50,7 @@ mock)** закрыты. Дальше — §13 (rate limit + cron). Фронт **
 | 9   | Shares: create / public GET+download / list / revoke → 410                | §10         | ✅     |
 | 10  | StoredFile: save_conversions, GET/DELETE files, signed download           | §9          | ✅     |
 | 11  | Telegram mock: bind/unbind, forgot/reset                                  | §11         | ✅     |
+| 12  | Rate limit convert/login + cron TTL uploads/results/orphans               | §13         | ✅     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -333,27 +335,27 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 SPA-контракт (cookie), который ждёт
 [frontend-implementation-plan.md](./frontend-implementation-plan.md) §4:
 
-| Метод  | Путь                        | Auth             |
-| ------ | --------------------------- | ---------------- |
-| POST   | `/api/auth/register`        | —                |
-| POST   | `/api/auth/login`           | —                |
-| POST   | `/api/auth/logout`          | cookie           |
-| GET    | `/api/auth/me`              | cookie           |
-| POST   | `/api/auth/forgot-password` | —                |
-| POST   | `/api/auth/reset-password`  | —                |
-| PATCH  | `/api/users/me`             | cookie           |
-| POST   | `/api/users/me/telegram/bind` | cookie         |
-| POST   | `/api/users/me/telegram/unbind` | cookie       |
-| GET    | `/api/api-keys`             | cookie           |
-| POST   | `/api/api-keys/reissue`     | cookie           |
-| POST   | `/api/jobs`                 | cookie \| гость  |
-| GET    | `/api/jobs/:id`             | cookie \| гость  |
-| GET    | `/api/files`                | cookie           |
-| GET    | `/api/files/:id/download`   | cookie \| signed |
-| DELETE | `/api/files/:id`            | cookie           |
-| POST   | `/api/shares`               | cookie \| гость  |
-| GET    | `/api/shares`               | cookie           |
-| DELETE | `/api/shares/:token`        | cookie           |
+| Метод  | Путь                            | Auth             |
+| ------ | ------------------------------- | ---------------- |
+| POST   | `/api/auth/register`            | —                |
+| POST   | `/api/auth/login`               | —                |
+| POST   | `/api/auth/logout`              | cookie           |
+| GET    | `/api/auth/me`                  | cookie           |
+| POST   | `/api/auth/forgot-password`     | —                |
+| POST   | `/api/auth/reset-password`      | —                |
+| PATCH  | `/api/users/me`                 | cookie           |
+| POST   | `/api/users/me/telegram/bind`   | cookie           |
+| POST   | `/api/users/me/telegram/unbind` | cookie           |
+| GET    | `/api/api-keys`                 | cookie           |
+| POST   | `/api/api-keys/reissue`         | cookie           |
+| POST   | `/api/jobs`                     | cookie \| гость  |
+| GET    | `/api/jobs/:id`                 | cookie \| гость  |
+| GET    | `/api/files`                    | cookie           |
+| GET    | `/api/files/:id/download`       | cookie \| signed |
+| DELETE | `/api/files/:id`                | cookie           |
+| POST   | `/api/shares`                   | cookie \| гость  |
+| GET    | `/api/shares`                   | cookie           |
+| DELETE | `/api/shares/:token`            | cookie           |
 
 Владение job:
 
@@ -370,21 +372,21 @@ SPA-контракт (cookie), который ждёт
 
 | Канал              | Лимит            | Ключ лимита | Статус |
 | ------------------ | ---------------- | ----------- | ------ |
-| API convert        | 30 / час / ключ  | ApiKey id   | ⬜     |
-| UI convert (гость) | 10 / час / IP    | IP          | ⬜     |
-| UI convert (user)  | 60 / час / user  | User id     | ⬜     |
-| Login              | 10 / 15 мин / IP | IP          | ⬜     |
+| API convert        | 30 / час / ключ  | ApiKey id   | ✅     |
+| UI convert (гость) | 10 / час / IP    | IP          | ✅     |
+| UI convert (user)  | 60 / час / user  | User id     | ✅     |
+| Login              | 10 / 15 мин / IP | IP          | ✅     |
 
 429 → `rate_limited` + заголовок/тело, из которого фронт может взять «подождите N сек»
 (Retry-After).
 
 | Cron                  | Правило                                                            | Статус |
 | --------------------- | ------------------------------------------------------------------ | ------ |
-| uploads               | Удалить после успеха job **или** старше **1 ч**                    | ⬜     |
-| results (без профиля) | Старше **24 ч** с `finished_at`; скачивание срок **не** продлевает | ⬜     |
-| shares                | `expires_at` в прошлом — недоступны (410); файлы по своим TTL      | ⬜     |
+| uploads               | Удалить после успеха job **или** старше **1 ч**                    | ✅     |
+| results (без профиля) | Старше **24 ч** с `finished_at`; скачивание срок **не** продлевает | ✅     |
+| shares                | `expires_at` в прошлом — недоступны (410); файлы по своим TTL      | ✅     |
 | signed tokens         | Проверка подписи+exp при запросе, отдельный cron не нужен          | —      |
-| orphan-файлы на диске | Периодически убрать файлы без живого job/StoredFile                | ⬜     |
+| orphan-файлы на диске | Периодически убрать файлы без живого job/StoredFile                | ✅     |
 
 `@nestjs/schedule` в том же процессе.
 
@@ -418,14 +420,14 @@ SPA-контракт (cookie), который ждёт
 
 | Тип         | Инструмент | Где                         | Минимальный набор v1                                                              | Статус  |
 | ----------- | ---------- | --------------------------- | --------------------------------------------------------------------------------- | ------- |
-| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL       | 🟡      |
-| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | 🟡      |
+| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL       | ✅      |
+| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | ✅      |
 | E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК (когда фронт на этапе G) | ⏸ фронт |
 
 Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:
-register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL, share 410 —
-есть. LibreOffice: HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла кейса —
-гонять локально, в среде без бинаря не ослаблять assert.
+register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL, share 410,
+rate limit §7.6, TTL-cleanup — есть. LibreOffice: HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH,
+иначе не skip смысла кейса — гонять локально, в среде без бинаря не ослаблять assert.
 
 ---
 
@@ -443,13 +445,15 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ✅     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ✅     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ✅     |
-| **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
-| **I** | §15 тесты                            | Регрессия               | ⬜     |
+| **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ✅     |
+| **I** | §15 тесты                            | Регрессия               | 🟡     |
 
 Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
 public). Этап **E:** StoredFile после `save_conversions`, `GET/DELETE /api/files` и v1, signed
 download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, shares v1 и **files v1**
-живые; фронт `/api-docs` закрыт по этому канону. Этап **G:** Telegram mock bind/unbind, forgot/reset.
+живые; фронт `/api-docs` закрыт по этому канону. Этап **G:** Telegram mock bind/unbind,
+forgot/reset. Этап **H:** login/convert throttler + `CleanupService` (uploads 1 ч, results 24 ч,
+orphans). Этап **I:** HTTP/unit минимума зелёные; Playwright — фронт G.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -481,10 +485,11 @@ download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, s
 - [x] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
 - [x] Share: создать (гость и user), public GET, revoke → 410
 - [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
-- [ ] Rate limits §7.6; cron TTL исходников/результатов/shares
+- [x] Rate limits §7.6; cron TTL исходников/результатов/shares
 - [x] Telegram — mock; живой бот не требуется
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
-- [ ] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410 есть
+- [x] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410, rate limit,
+      TTL; Playwright — фронт G
 - [x] Нет раздачи `storage/` статикой; нет секретов в репо
 
 ---

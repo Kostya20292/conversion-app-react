@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiThrottlerGuard } from '@/common/guards/api-throttler.guard';
 import { OptionalCookieAuthGuard } from '@/common/guards/optional-cookie-auth.guard';
 import { OptionalAuthUser } from '@/common/optional-auth-user.decorator';
 import type { User } from '@/users/user.entity';
@@ -27,6 +28,7 @@ export class JobsController {
 
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(ApiThrottlerGuard)
   @UseInterceptors(JobFileInterceptor)
   async create(
     @UploadedFile() file: unknown,
