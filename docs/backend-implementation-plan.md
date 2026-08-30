@@ -12,9 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–8 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи, storage, HTTP
-jobs, движки, worker, signed download). Дальше — §9 StoredFile. Фронт закрыл этапы A2, **B** и **C**
-(гостевая конвертация на главной).
+**Прогресс:** §1–8 и **§10 shares** готовы. Дальше — §9 StoredFile. Фронт закрыл A2, **B** и **C**;
+этап **D** (кнопка «Поделиться») разблокирован.
 
 ---
 
@@ -34,9 +33,8 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: сохранение в профиль
 
-Auth cookie, профиль/ключи, HTTP jobs, worker и signed download закрыты. Дальше — §9
-(`save_conversions` / StoredFile). Фронт **C** (upload/poll/download) закрыт. Моки HTTP **не**
-делаем (как на фронте).
+Auth cookie, jobs, worker, signed download и **shares** закрыты. Дальше — §9 (`save_conversions` /
+StoredFile). Фронт **D** (создать ссылку) разблокирован. Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -48,6 +46,7 @@ Auth cookie, профиль/ключи, HTTP jobs, worker и signed download з�
 | 6   | Users и API-ключи: PATCH /me, ключ при register, reissue                  | §5          | ✅     |
 | 7   | UI + v1 jobs: upload → queued, GET статуса, владение                      | §7          | ✅     |
 | 8   | Worker + signed download (гость)                                          | §8          | ✅     |
+| 9   | Shares: create / public GET+download / list / revoke → 410                | §10         | ✅     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -277,13 +276,16 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 
 | Шаг  | Действие                                                           | Критерий готовности                                   | Статус |
 | ---- | ------------------------------------------------------------------ | ----------------------------------------------------- | ------ |
-| 10.1 | `POST /api/shares` и `POST /api/v1/shares`: `job_id` или `file_id` | Гость — только свой completed job                     | ⬜     |
-| 10.2 | Token криптослучайный; default `expires_at` = **+7 дней**          | URL для SPA: `/s/:token`                              | ⬜     |
-| 10.3 | `GET /api/v1/public/s/:token` — метаданные без логина              | Имя, формат, размер, TTL; без данных владельца        | ⬜     |
-| 10.4 | Download по token (тот же public-префикс)                          | Отдаётся **результат**, не исходник                   | ⬜     |
-| 10.5 | `GET /api/shares` + v1 — список активных владельца                 | Гость без ЛК список не видит                          | ⬜     |
-| 10.6 | `DELETE /api/shares/:token` (+ v1) — revoke                        | Дальше 410 и «ссылка недоступна» на фронте            | ⬜     |
-| 10.7 | Истёк TTL или revoked → `410 gone`                                 | Без различия «истекла / отозвана» в деталях владельца | ⬜     |
+| 10.1 | `POST /api/shares` и `POST /api/v1/shares`: `job_id` или `file_id` | Гость — только свой completed job                     | ✅     |
+| 10.2 | Token криптослучайный; default `expires_at` = **+7 дней**          | URL для SPA: `/s/:token`                              | ✅     |
+| 10.3 | `GET /api/v1/public/s/:token` — метаданные без логина              | Имя, формат, размер, TTL; без данных владельца        | ✅     |
+| 10.4 | Download по token (тот же public-префикс)                          | Отдаётся **результат**, не исходник                   | ✅     |
+| 10.5 | `GET /api/shares` + v1 — список активных владельца                 | Гость без ЛК список не видит                          | ✅     |
+| 10.6 | `DELETE /api/shares/:token` (+ v1) — revoke                        | Дальше 410 и «ссылка недоступна» на фронте            | ✅     |
+| 10.7 | Истёк TTL или revoked → `410 gone`                                 | Без различия «истекла / отозвана» в деталях владельца | ✅     |
+
+**Критерий этапа:** гость `POST /api/shares` на completed job → public GET + download PNG; владелец
+отзывает → `410 gone`.
 
 ---
 
@@ -414,9 +416,9 @@ SPA-контракт (cookie), который ждёт
 | E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК (когда фронт на этапе G) | ⏸ фронт |
 
 Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:
-register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL — есть; share
-410 — с §10. LibreOffice: HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла
-кейса — гонять локально, в среде без бинаря не ослаблять assert.
+register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL, share 410 —
+есть. LibreOffice: HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла кейса —
+гонять локально, в среде без бинаря не ослаблять assert.
 
 ---
 
@@ -430,15 +432,16 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 | **A** | §1–3 фундамент, ошибки, сущности     | —                       | ✅     |
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ✅     |
-| **D** | §10 shares                           | Фронт D                 | ⬜     |
+| **D** | §10 shares                           | Фронт D                 | ✅     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | 🟡     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
 
-Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **F:**
-`POST/GET /api/v1/jobs`, download и `GET /api/v1/me` уже живые; files/shares v1 — позже.
+Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
+public). Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me` и shares v1 живые; files v1
+— с §9.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -466,14 +469,14 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 - [x] Гость: `POST /api/jobs` → poll → signed download (UC-01)
 - [x] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
 - [x] Пароли argon2; login без enumeration; правила пароля на сервере
-- [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs и `GET /me`; files/shares v1 — позже
+- [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs, `GET /me`, shares; files v1 — с §9
 - [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
-- [ ] Share: создать (гость и user), public GET, revoke → 410
+- [x] Share: создать (гость и user), public GET, revoke → 410
 - [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
 - [ ] Rate limits §7.6; cron TTL исходников/результатов/shares
 - [ ] Telegram — mock; живой бот не требуется
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
-- [ ] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download есть; share 410 — с §10
+- [ ] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410 есть
 - [x] Нет раздачи `storage/` статикой; нет секретов в репо
 
 ---
