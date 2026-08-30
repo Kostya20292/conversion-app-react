@@ -2,6 +2,7 @@ import { StreamableFile } from '@nestjs/common';
 import type { FileFormat } from '@/common/domain/file-format';
 import type { JobStatus } from '@/common/domain/job-status';
 import type { ApiErrorCode } from '@/common/errors/api-error-codes';
+import { contentDispositionAttachment } from '@/common/result-file-name';
 import type { ConversionJob } from './conversion-job.entity';
 
 export type JobCreatedResponse = {
@@ -34,6 +35,7 @@ export const toJobCreatedResponse = (job: ConversionJob): JobCreatedResponse => 
 export const toJobStatusResponse = (
   job: ConversionJob,
   download?: { url: string; expiresAt: Date },
+  savedToProfile = false,
 ): JobStatusResponse => {
   const body: JobStatusResponse = {
     id: job.id,
@@ -45,7 +47,7 @@ export const toJobStatusResponse = (
   if (job.status === 'completed' && download) {
     body.download_url = download.url;
     body.expires_at = download.expiresAt.toISOString();
-    body.saved_to_profile = false;
+    body.saved_to_profile = savedToProfile;
   }
 
   if (job.status === 'failed' && job.errorCode) {
@@ -58,5 +60,5 @@ export const toJobStatusResponse = (
 export const toStreamableFile = (file: JobDownload): StreamableFile =>
   new StreamableFile(file.bytes, {
     type: file.mimeType,
-    disposition: `attachment; filename="${file.filename}"`,
+    disposition: contentDispositionAttachment(file.filename),
   });

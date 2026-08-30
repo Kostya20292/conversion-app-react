@@ -1,6 +1,7 @@
 import { StreamableFile } from '@nestjs/common';
 import { FILE_FORMATS, type FileFormat } from '@/common/domain/file-format';
 import { ApiException } from '@/common/errors/api-exception';
+import { contentDispositionAttachment, resultFileName } from '@/common/result-file-name';
 import type { ShareLink } from './share-link.entity';
 
 export type ShareCreatedResponse = {
@@ -38,8 +39,6 @@ export const sharePageUrl = (token: string): string => `/s/${token}`;
 
 export const sharePublicDownloadUrl = (token: string): string =>
   `/api/v1/public/s/${token}/download`;
-
-export const jobResultFileName = (format: FileFormat): string => `result.${format}`;
 
 export const toShareCreatedResponse = (share: ShareLink): ShareCreatedResponse => ({
   token: share.token,
@@ -79,7 +78,7 @@ export const toShareListItem = (share: ShareLink): ShareListItem => ({
 export const toShareFileStream = (file: ShareDownload): StreamableFile =>
   new StreamableFile(file.bytes, {
     type: file.mimeType,
-    disposition: `attachment; filename="${file.filename}"`,
+    disposition: contentDispositionAttachment(file.filename),
   });
 
 export const fileNameFromShare = (share: ShareLink): string => {
@@ -88,7 +87,7 @@ export const fileNameFromShare = (share: ShareLink): string => {
   }
 
   if (share.job) {
-    return jobResultFileName(share.job.targetFormat);
+    return resultFileName(share.job.sourceFileName, share.job.targetFormat);
   }
 
   return '';
@@ -108,7 +107,7 @@ export const publicPayloadFromShare = (
 
   if (share.job && share.job.resultStorageKey !== null && share.job.resultSize !== null) {
     return {
-      name: jobResultFileName(share.job.targetFormat),
+      name: resultFileName(share.job.sourceFileName, share.job.targetFormat),
       format: share.job.targetFormat,
       sizeBytes: share.job.resultSize,
       storageKey: share.job.resultStorageKey,

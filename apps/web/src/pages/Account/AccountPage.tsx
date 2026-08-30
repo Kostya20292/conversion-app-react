@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { deleteFileRequest, listFilesRequest } from '@/api/files';
 import { ApiRequestError, NetworkError } from '@/api/http';
+import { createShareRequest, listSharesRequest, revokeShareRequest } from '@/api/shares';
+import { patchMeRequest } from '@/api/users';
 import { useAuthStore } from '@/app/authStore';
 import { Button } from '@/components/Button/Button';
 import { Modal } from '@/components/Modal/Modal';
 import { Toast } from '@/components/Toast/Toast';
 import { Toggle } from '@/components/Toggle/Toggle';
 import { copyToClipboard } from '@/lib/copyToClipboard';
+import { toAbsoluteUrl } from '@/lib/toAbsoluteUrl';
+import { triggerBrowserDownload } from '@/lib/triggerBrowserDownload';
 import type { ShareLinkItem, StoredFile } from '@/types/account';
 import { AccountApiKeySection } from './AccountApiKeySection/AccountApiKeySection';
 import { AccountFileList } from './AccountFileList/AccountFileList';
@@ -14,18 +19,23 @@ import { AccountProfileSection } from './AccountProfileSection/AccountProfileSec
 import { AccountShareList } from './AccountShareList/AccountShareList';
 import styles from './AccountPage.module.scss';
 
-const EMPTY_FILES: StoredFile[] = [];
+const isAbortError = (error: unknown): boolean =>
+  (error instanceof DOMException && error.name === 'AbortError') ||
+  (error instanceof Error && error.name === 'AbortError');
 
 export const AccountPage = () => {
   const navigate = useNavigate();
   const issuedApiKey = useAuthStore((state) => state.issuedApiKey);
   const saveConversions = useAuthStore((state) => state.user?.saveConversions) ?? false;
+  const applyUser = useAuthStore((state) => state.applyUser);
   const logout = useAuthStore((state) => state.logout);
+  const [files, setFiles] = useState<StoredFile[]>([]);
   const [shares, setShares] = useState<ShareLinkItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<StoredFile | null>(null);
   const [shareToRevoke, setShareToRevoke] = useState<ShareLinkItem | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSavingToggle, setIsSavingToggle] = useState(false);
   const [saveConversionsOverride, setSaveConversionsOverride] = useState<boolean | null>(null);
   const saveConversionsChecked = saveConversionsOverride ?? saveConversions;
 
@@ -37,17 +47,95 @@ export const AccountPage = () => {
     setToastMessage(null);
   };
 
-  const handleDownloadFile = (_file: StoredFile) => {
-    handleNotify('Скачивание подключится на следующем этапе.');
+  const notifyCaught = (error: unknown, fallback: string) => {
+    if (error instanceof ApiRequestError && error.code === 'internal_error') {
+      return;
+    }
+
+    if (error instanceof ApiRequestError || error instanceof NetworkError) {
+      handleNotify(error.userMessage);
+      return;
+    }
+
+    handleNotify(fallback);
   };
 
-  const handleShareFile = (_file: StoredFile) => {
-    handleNotify('Создание ссылки подключится на следующем этапе.');
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadLists = async () => {
+      try {
+        const [nextFiles, nextShares] = await Promise.all([
+          listFilesRequest({ signal: controller.signal }),
+          listSharesRequest({ signal: controller.signal }),
+        ]);
+        setFiles(nextFiles);
+        setShares(nextShares);
+      } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setToastMessage(error.userMessage);
+          return;
+        }
+
+        setToastMessage('Не удалось загрузить файлы и ссылки.');
+      }
+    };
+
+    void loadLists();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const handleDownloadFile = (file: StoredFile) => {
+    triggerBrowserDownload(toAbsoluteUrl(file.downloadUrl));
+  };
+
+  const handleShareFile = (file: StoredFile) => {
+    void (async () => {
+      try {
+        const created = await createShareRequest({ fileId: file.id });
+        const nextShares = await listSharesRequest();
+        setShares(nextShares);
+        const copied = await copyToClipboard(toAbsoluteUrl(created.url));
+        handleNotify(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
+      } catch (error) {
+        notifyCaught(error, 'Не удалось создать ссылку. Попробуйте ещё раз.');
+      }
+    })();
   };
 
   const handleCopyShare = async (share: ShareLinkItem) => {
-    const copied = await copyToClipboard(share.url);
+    const copied = await copyToClipboard(toAbsoluteUrl(share.url));
     handleNotify(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
+  };
+
+  const handleSaveConversionsChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextChecked = event.target.checked;
+    setSaveConversionsOverride(nextChecked);
+    setIsSavingToggle(true);
+
+    void (async () => {
+      try {
+        const user = await patchMeRequest({ saveConversions: nextChecked });
+        applyUser(user);
+        setSaveConversionsOverride(null);
+      } catch (error) {
+        setSaveConversionsOverride(null);
+        notifyCaught(error, 'Не удалось сохранить настройку.');
+      } finally {
+        setIsSavingToggle(false);
+      }
+    })();
   };
 
   const handleLogout = async () => {
@@ -57,32 +145,48 @@ export const AccountPage = () => {
       await logout();
       navigate('/', { replace: true });
     } catch (error) {
-      if (error instanceof ApiRequestError && error.code === 'internal_error') {
-        return;
-      }
-
-      if (error instanceof ApiRequestError || error instanceof NetworkError) {
-        handleNotify(error.userMessage);
-        return;
-      }
-
-      handleNotify('Не удалось выйти. Попробуйте ещё раз.');
+      notifyCaught(error, 'Не удалось выйти. Попробуйте ещё раз.');
     } finally {
       setIsLoggingOut(false);
     }
   };
 
   const handleConfirmDeleteFile = () => {
-    handleNotify('Удаление файла подключится на следующем этапе.');
+    const file = fileToDelete;
     setFileToDelete(null);
+    if (!file) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        await deleteFileRequest(file.id);
+        setFiles((current) => current.filter((item) => item.id !== file.id));
+        const nextShares = await listSharesRequest();
+        setShares(nextShares);
+        handleNotify('Файл удалён');
+      } catch (error) {
+        notifyCaught(error, 'Не удалось удалить файл. Попробуйте ещё раз.');
+      }
+    })();
   };
 
   const handleConfirmRevokeShare = () => {
-    if (shareToRevoke) {
-      setShares((current) => current.filter((item) => item.id !== shareToRevoke.id));
-    }
-    handleNotify('Отзыв ссылки подключится на следующем этапе.');
+    const share = shareToRevoke;
     setShareToRevoke(null);
+    if (!share) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        await revokeShareRequest(share.token);
+        setShares((current) => current.filter((item) => item.id !== share.id));
+        handleNotify('Ссылка отозвана');
+      } catch (error) {
+        notifyCaught(error, 'Не удалось отозвать ссылку. Попробуйте ещё раз.');
+      }
+    })();
   };
 
   return (
@@ -107,14 +211,15 @@ export const AccountPage = () => {
               label="Сохранять конвертации в профиле"
               description="Выключение не удаляет уже сохранённые файлы"
               checked={saveConversionsChecked}
-              onChange={(event) => setSaveConversionsOverride(event.target.checked)}
+              disabled={isSavingToggle}
+              onChange={handleSaveConversionsChange}
             />
           </section>
         </div>
 
         <div className={styles.lists}>
           <AccountFileList
-            files={EMPTY_FILES}
+            files={files}
             onDownload={handleDownloadFile}
             onShare={handleShareFile}
             onDelete={setFileToDelete}

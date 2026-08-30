@@ -10,12 +10,17 @@ export type IssuedDownloadToken = {
   expiresAt: Date;
 };
 
-type DownloadTokenPayload = {
+type JobDownloadTokenPayload = {
   purpose: typeof DOWNLOAD_TOKEN_PURPOSE;
   jobId: string;
 };
 
-const isDownloadTokenPayload = (value: unknown): value is DownloadTokenPayload => {
+type FileDownloadTokenPayload = {
+  purpose: typeof DOWNLOAD_TOKEN_PURPOSE;
+  fileId: string;
+};
+
+const isJobDownloadTokenPayload = (value: unknown): value is JobDownloadTokenPayload => {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
@@ -27,6 +32,18 @@ const isDownloadTokenPayload = (value: unknown): value is DownloadTokenPayload =
   return value.purpose === DOWNLOAD_TOKEN_PURPOSE && typeof value.jobId === 'string';
 };
 
+const isFileDownloadTokenPayload = (value: unknown): value is FileDownloadTokenPayload => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  if (!('purpose' in value) || !('fileId' in value)) {
+    return false;
+  }
+
+  return value.purpose === DOWNLOAD_TOKEN_PURPOSE && typeof value.fileId === 'string';
+};
+
 @Injectable()
 export class SignedDownloadTokenService {
   constructor(private readonly jwtService: JwtService) {}
@@ -34,7 +51,17 @@ export class SignedDownloadTokenService {
   issue(jobId: string, now: Date = new Date()): IssuedDownloadToken {
     const expiresAt = new Date(now.getTime() + DOWNLOAD_TOKEN_TTL_SECONDS * 1000);
     const token = this.jwtService.sign(
-      { purpose: DOWNLOAD_TOKEN_PURPOSE, jobId } satisfies DownloadTokenPayload,
+      { purpose: DOWNLOAD_TOKEN_PURPOSE, jobId } satisfies JobDownloadTokenPayload,
+      { expiresIn: DOWNLOAD_TOKEN_TTL_SECONDS },
+    );
+
+    return { token, expiresAt };
+  }
+
+  issueForFile(fileId: string, now: Date = new Date()): IssuedDownloadToken {
+    const expiresAt = new Date(now.getTime() + DOWNLOAD_TOKEN_TTL_SECONDS * 1000);
+    const token = this.jwtService.sign(
+      { purpose: DOWNLOAD_TOKEN_PURPOSE, fileId } satisfies FileDownloadTokenPayload,
       { expiresIn: DOWNLOAD_TOKEN_TTL_SECONDS },
     );
 
@@ -42,9 +69,20 @@ export class SignedDownloadTokenService {
   }
 
   verify(token: string, jobId: string): void {
+    this.verifyPayload(token, (payload) => isJobDownloadTokenPayload(payload) && payload.jobId === jobId);
+  }
+
+  verifyFile(token: string, fileId: string): void {
+    this.verifyPayload(
+      token,
+      (payload) => isFileDownloadTokenPayload(payload) && payload.fileId === fileId,
+    );
+  }
+
+  private verifyPayload(token: string, matches: (payload: unknown) => boolean): void {
     try {
       const payload: unknown = this.jwtService.verify(token);
-      if (!isDownloadTokenPayload(payload) || payload.jobId !== jobId) {
+      if (!matches(payload)) {
         throw new ApiException('not_found');
       }
     } catch (error: unknown) {

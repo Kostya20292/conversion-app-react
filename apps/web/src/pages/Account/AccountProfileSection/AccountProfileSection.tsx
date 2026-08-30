@@ -1,4 +1,7 @@
 import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ApiRequestError, NetworkError } from '@/api/http';
+import { patchMeRequest } from '@/api/users';
 import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
@@ -24,7 +27,10 @@ const FIELD_IDS = {
 } as const;
 
 export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) => {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const applyUser = useAuthStore((state) => state.applyUser);
+  const logout = useAuthStore((state) => state.logout);
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -33,7 +39,8 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   const [savedEmail, setSavedEmail] = useState(user?.email ?? '');
   const [fieldErrors, setFieldErrors] = useState<AccountProfileFormErrors>({});
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
-  const [isClientAccepted, setIsClientAccepted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isTelegramBound, setIsTelegramBound] = useState(Boolean(user?.telegramId));
   const [isUnbindModalOpen, setIsUnbindModalOpen] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
@@ -79,28 +86,28 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   const handleDisplayNameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setDisplayName(value);
-    setIsClientAccepted(false);
+    setSubmitError(null);
     syncFieldErrors(['displayName'], { ...getFormValues(), displayName: value });
   };
 
   const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setEmail(value);
-    setIsClientAccepted(false);
+    setSubmitError(null);
     syncFieldErrors(['email', 'currentPassword'], { ...getFormValues(), email: value });
   };
 
   const handleCurrentPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setCurrentPassword(value);
-    setIsClientAccepted(false);
+    setSubmitError(null);
     syncFieldErrors(['currentPassword'], { ...getFormValues(), currentPassword: value });
   };
 
   const handleNewPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setNewPassword(value);
-    setIsClientAccepted(false);
+    setSubmitError(null);
     syncFieldErrors(['currentPassword', 'newPassword', 'newPasswordConfirm'], {
       ...getFormValues(),
       newPassword: value,
@@ -110,7 +117,7 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   const handleNewPasswordConfirmChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setNewPasswordConfirm(value);
-    setIsClientAccepted(false);
+    setSubmitError(null);
     syncFieldErrors(['newPasswordConfirm'], { ...getFormValues(), newPasswordConfirm: value });
   };
 
@@ -124,16 +131,53 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
 
     const firstErrorField = getFirstErrorField(nextErrors, ACCOUNT_PROFILE_FIELD_ORDER);
     if (firstErrorField) {
-      setIsClientAccepted(false);
+      setSubmitError(null);
       fieldRefs[firstErrorField].current?.focus();
       return;
     }
 
-    setSavedEmail(values.email.trim());
-    setCurrentPassword('');
-    setNewPassword('');
-    setNewPasswordConfirm('');
-    setIsClientAccepted(true);
+    const emailChanged = values.email.trim() !== savedEmail.trim();
+    const passwordChanged = values.newPassword.length > 0;
+
+    void (async () => {
+      setIsSaving(true);
+      setSubmitError(null);
+
+      try {
+        const updated = await patchMeRequest({
+          displayName: values.displayName.trim(),
+          email: values.email.trim(),
+          currentPassword: emailChanged || passwordChanged ? values.currentPassword : undefined,
+          newPassword: passwordChanged ? values.newPassword : undefined,
+        });
+
+        if (emailChanged || passwordChanged) {
+          await logout();
+          navigate('/login?next=/account', { replace: true });
+          return;
+        }
+
+        applyUser(updated);
+        setSavedEmail(updated.email);
+        setCurrentPassword('');
+        setNewPassword('');
+        setNewPasswordConfirm('');
+        onNotify('Профиль сохранён');
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setSubmitError(error.userMessage);
+          return;
+        }
+
+        setSubmitError('Не удалось сохранить профиль. Попробуйте ещё раз.');
+      } finally {
+        setIsSaving(false);
+      }
+    })();
   };
 
   const handleBindTelegram = () => {
@@ -219,12 +263,12 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
           error={fieldErrors.newPasswordConfirm}
           onChange={handleNewPasswordConfirmChange}
         />
-        {isClientAccepted && (
-          <Alert variant="info" live>
-            Сохранение профиля подключится на следующем этапе.
+        {submitError && (
+          <Alert variant="error" live>
+            {submitError}
           </Alert>
         )}
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="secondary" disabled={isSaving} aria-busy={isSaving}>
           Сохранить профиль
         </Button>
       </form>

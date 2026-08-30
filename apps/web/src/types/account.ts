@@ -7,10 +7,12 @@ export type StoredFile = {
   sizeBytes: number;
   createdAt: string;
   source: StoredFileSource;
+  downloadUrl: string;
 };
 
 export type ShareLinkItem = {
   id: string;
+  token: string;
   url: string;
   expiresAt: string;
   fileName: string;

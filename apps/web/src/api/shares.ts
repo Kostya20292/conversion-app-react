@@ -1,10 +1,14 @@
 import { apiFetch, type ApiFetchOptions } from './http';
-import type { ShareCreatedDto, SharePublicDto } from '@/types/api';
+import type { ShareCreatedDto, ShareListDto, SharePublicDto } from '@/types/api';
+import type { ShareLinkItem } from '@/types/account';
 import type { ShareFileMeta } from '@/types/share';
 
 export type CreateShareRequest = {
-  jobId: string;
+  jobId?: string;
+  fileId?: string;
 };
+
+const SHARE_PAGE_PREFIX = '/s/';
 
 export const toShareFileMeta = (dto: SharePublicDto): ShareFileMeta => ({
   name: dto.name,
@@ -13,16 +17,58 @@ export const toShareFileMeta = (dto: SharePublicDto): ShareFileMeta => ({
   expiresAt: dto.expires_at,
 });
 
+export const toShareLinkItem = (dto: ShareListDto['shares'][number]): ShareLinkItem => ({
+  id: dto.id,
+  token: tokenFromShareUrl(dto.url),
+  url: dto.url,
+  expiresAt: dto.expires_at,
+  fileName: dto.file_name,
+});
+
 export const createShareRequest = async (
   input: CreateShareRequest,
   options?: Pick<ApiFetchOptions, 'signal'>,
-): Promise<ShareCreatedDto> =>
-  apiFetch<ShareCreatedDto>('/api/shares', {
+): Promise<ShareCreatedDto> => {
+  const body: Record<string, string> = {};
+  if (input.jobId) {
+    body.job_id = input.jobId;
+  }
+
+  if (input.fileId) {
+    body.file_id = input.fileId;
+  }
+
+  return apiFetch<ShareCreatedDto>('/api/shares', {
     method: 'POST',
-    body: JSON.stringify({ job_id: input.jobId }),
+    body: JSON.stringify(body),
     errorContext: 'share',
     signal: options?.signal,
   });
+};
+
+export const listSharesRequest = async (
+  options?: Pick<ApiFetchOptions, 'signal'>,
+): Promise<ShareLinkItem[]> => {
+  const dto = await apiFetch<ShareListDto>('/api/shares', {
+    errorContext: 'account',
+    notify: { sessionExpired: true },
+    signal: options?.signal,
+  });
+
+  return dto.shares.map(toShareLinkItem);
+};
+
+export const revokeShareRequest = async (
+  token: string,
+  options?: Pick<ApiFetchOptions, 'signal'>,
+): Promise<void> => {
+  await apiFetch<void>(`/api/shares/${encodeURIComponent(token)}`, {
+    method: 'DELETE',
+    errorContext: 'share',
+    notify: { sessionExpired: true },
+    signal: options?.signal,
+  });
+};
 
 export const getPublicShareRequest = async (
   token: string,
@@ -33,3 +79,6 @@ export const getPublicShareRequest = async (
     notify: { sessionExpired: false, serverError: false },
     signal: options?.signal,
   });
+
+const tokenFromShareUrl = (url: string): string =>
+  url.startsWith(SHARE_PAGE_PREFIX) ? url.slice(SHARE_PAGE_PREFIX.length) : url;

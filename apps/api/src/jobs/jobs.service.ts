@@ -5,10 +5,12 @@ import { Repository } from 'typeorm';
 import { MIME_BY_FORMAT } from '@/common/domain/file-mime';
 import type { RequestSource } from '@/common/domain/request-source';
 import { ApiException } from '@/common/errors/api-exception';
+import { resultFileName, sourceFileNameFromUpload } from '@/common/result-file-name';
 import { SignedDownloadTokenService } from '@/common/signed-download-token';
 import { uploadStorageKey } from '@/file-store/storage-key';
 import { StorageService } from '@/file-store/storage.service';
 import { type UploadFile, validateUpload } from '@/file-store/validate-upload';
+import { FilesService } from '@/files/files.service';
 import { ConversionJob } from './conversion-job.entity';
 import {
   type JobCreatedResponse,
@@ -33,6 +35,7 @@ export class JobsService {
     @InjectRepository(ConversionJob) private readonly jobs: Repository<ConversionJob>,
     private readonly storage: StorageService,
     private readonly downloadTokens: SignedDownloadTokenService,
+    private readonly files: FilesService,
   ) {}
 
   async create(input: CreateJobInput): Promise<JobCreatedResponse> {
@@ -60,6 +63,7 @@ export class JobsService {
       sourceSize: file.bytes.byteLength,
       resultSize: null,
       sourceStorageKey,
+      sourceFileName: sourceFileNameFromUpload(file.originalName),
       resultStorageKey: null,
       finishedAt: null,
     });
@@ -103,24 +107,34 @@ export class JobsService {
     return this.readResult(job);
   }
 
-  private toStatus(job: ConversionJob, channel: 'ui' | 'api'): JobStatusResponse {
+  private async toStatus(job: ConversionJob, channel: 'ui' | 'api'): Promise<JobStatusResponse> {
     if (job.status !== 'completed') {
       return toJobStatusResponse(job);
     }
 
+    const savedToProfile = await this.files.isSavedForJob(job.id);
+
     if (channel === 'ui') {
       const issued = this.downloadTokens.issue(job.id);
-      return toJobStatusResponse(job, {
-        url: `/api/jobs/${job.id}/download?token=${encodeURIComponent(issued.token)}`,
-        expiresAt: issued.expiresAt,
-      });
+      return toJobStatusResponse(
+        job,
+        {
+          url: `/api/jobs/${job.id}/download?token=${encodeURIComponent(issued.token)}`,
+          expiresAt: issued.expiresAt,
+        },
+        savedToProfile,
+      );
     }
 
     const finishedAt = job.finishedAt ?? new Date();
-    return toJobStatusResponse(job, {
-      url: `/api/v1/jobs/${job.id}/download`,
-      expiresAt: new Date(finishedAt.getTime() + RESULT_TTL_MS),
-    });
+    return toJobStatusResponse(
+      job,
+      {
+        url: `/api/v1/jobs/${job.id}/download`,
+        expiresAt: new Date(finishedAt.getTime() + RESULT_TTL_MS),
+      },
+      savedToProfile,
+    );
   }
 
   private assertUiDownloadAccess(
@@ -153,7 +167,7 @@ export class JobsService {
       return {
         bytes,
         mimeType: MIME_BY_FORMAT[job.targetFormat],
-        filename: `result.${job.targetFormat}`,
+        filename: resultFileName(job.sourceFileName, job.targetFormat),
       };
     } catch {
       throw new ApiException('gone');

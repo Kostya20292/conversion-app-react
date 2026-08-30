@@ -16,7 +16,7 @@ export type ApiError = {
   message: string;
 };
 
-export type ApiErrorContext = 'login' | 'register' | 'session' | 'download' | 'share';
+export type ApiErrorContext = 'login' | 'register' | 'session' | 'download' | 'share' | 'account';
 
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
@@ -65,4 +65,29 @@ export type SharePublicDto = {
   size_bytes: number;
   expires_at: string;
   download_url: string;
+};
+
+export type StoredFileDto = {
+  id: string;
+  name: string;
+  format: JobFileFormat;
+  size_bytes: number;
+  created_at: string;
+  source: 'ui' | 'api';
+  download_url: string;
+};
+
+export type StoredFileListDto = {
+  files: StoredFileDto[];
+};
+
+export type ShareListItemDto = {
+  id: string;
+  url: string;
+  expires_at: string;
+  file_name: string;
+};
+
+export type ShareListDto = {
+  shares: ShareListItemDto[];
 };

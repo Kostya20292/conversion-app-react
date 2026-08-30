@@ -8,6 +8,7 @@ import { ConversionService } from '@/conversion/conversion.service';
 import { ENGINE_TIMEOUT_MS, withEngineTimeout } from '@/conversion/engine-timeout';
 import { resultStorageKey } from '@/file-store/storage-key';
 import { StorageService } from '@/file-store/storage.service';
+import { FilesService } from '@/files/files.service';
 import { ConversionJob } from '@/jobs/conversion-job.entity';
 
 const WORKER_POLL_INTERVAL_MS = 250;
@@ -29,6 +30,7 @@ export class JobWorkerService implements OnModuleDestroy {
     @InjectRepository(ConversionJob) private readonly jobs: Repository<ConversionJob>,
     private readonly conversion: ConversionService,
     private readonly storage: StorageService,
+    private readonly files: FilesService,
   ) {}
 
   onModuleDestroy(): void {
@@ -170,6 +172,7 @@ export class JobWorkerService implements OnModuleDestroy {
       latest.errorCode = null;
       latest.finishedAt = new Date();
       await this.jobs.save(latest);
+      await this.files.saveFromCompletedJob(latest, bytes);
       await this.storage.delete(job.sourceStorageKey).catch(() => undefined);
       this.logger.log(`job ${job.id} completed`);
     } catch (error: unknown) {

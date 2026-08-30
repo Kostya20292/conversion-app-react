@@ -61,6 +61,9 @@ export class ConversionJob {
   sourceStorageKey!: string;
 
   @Column({ type: 'text', nullable: true })
+  sourceFileName!: string | null;
+
+  @Column({ type: 'text', nullable: true })
   resultStorageKey!: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })

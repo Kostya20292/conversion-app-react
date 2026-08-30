@@ -23,6 +23,7 @@ type AuthState = {
   login: (input: LoginRequest) => Promise<void>;
   register: (input: RegisterRequest) => Promise<void>;
   rememberIssuedApiKey: (apiKey: string) => void;
+  applyUser: (user: AuthUser) => void;
   logout: () => Promise<void>;
   clearSession: () => void;
 };
@@ -113,6 +114,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     set({ issuedApiKey: apiKey });
+  },
+  applyUser: (user) => {
+    set({ user, status: 'authenticated' });
   },
   logout: async () => {
     try {

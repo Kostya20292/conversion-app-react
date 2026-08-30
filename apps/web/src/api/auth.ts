@@ -24,7 +24,7 @@ const AUTH_NOTIFY = {
   serverError: true,
 } as const;
 
-const toAuthUser = (dto: AuthUserDto): AuthUser => ({
+export const toAuthUser = (dto: AuthUserDto): AuthUser => ({
   id: dto.id,
   email: dto.email,
   displayName: dto.display_name,

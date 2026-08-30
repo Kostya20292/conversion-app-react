@@ -19,7 +19,9 @@ import { User } from '@/users/user.entity';
 @Index('idx_share_link_job_id', ['jobId'])
 @Index('idx_share_link_file_id', ['fileId'])
 @Index('idx_share_link_active', ['token'], { where: '"revoked_at" IS NULL' })
-@Check('(("job_id" IS NOT NULL)::int + ("file_id" IS NOT NULL)::int) = 1')
+@Check(
+  '"revoked_at" IS NOT NULL OR (("job_id" IS NOT NULL)::int + ("file_id" IS NOT NULL)::int) = 1',
+)
 export class ShareLink {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -44,7 +46,7 @@ export class ShareLink {
   @Column({ type: 'uuid', nullable: true })
   fileId!: string | null;
 
-  @ManyToOne(() => StoredFile, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => StoredFile, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'file_id' })
   file!: StoredFile | null;
 

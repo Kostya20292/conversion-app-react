@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–8 и **§10 shares** готовы. Дальше — §9 StoredFile. Фронт закрыл A2, **B**, **C** и
-**D** (кнопка «Поделиться»).
+**Прогресс:** §1–10 готовы (включая StoredFile). Дальше — Telegram mock / recovery (§11)
+или rate limit + cron (§13). Фронт закрыл A2, **B**, **C**, **D** и **E** (живой ЛК).
 
 ---
 
@@ -31,10 +31,11 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: сохранение в профиль
+## 0.1. Текущий фокус: Telegram mock / recovery
 
-Auth cookie, jobs, worker, signed download и **shares** закрыты. Дальше — §9 (`save_conversions` /
-StoredFile). Фронт **D** (создать ссылку) закрыт. Моки HTTP **не** делаем (как на фронте).
+Auth cookie, jobs, worker, signed download, **shares** и **StoredFile** закрыты. Дальше — §11
+(Telegram mock + reset) или §13 (rate limit + cron). Фронт **E** (живой ЛК) закрыт. Моки HTTP
+**не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -47,6 +48,7 @@ StoredFile). Фронт **D** (создать ссылку) закрыт. Мок
 | 7   | UI + v1 jobs: upload → queued, GET статуса, владение                      | §7          | ✅     |
 | 8   | Worker + signed download (гость)                                          | §8          | ✅     |
 | 9   | Shares: create / public GET+download / list / revoke → 410                | §10         | ✅     |
+| 10  | StoredFile: save_conversions, GET/DELETE files, signed download           | §9          | ✅     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -263,10 +265,10 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 
 | Шаг | Действие                                                              | Критерий готовности                   | Статус |
 | --- | --------------------------------------------------------------------- | ------------------------------------- | ------ |
-| 9.1 | После completed применить таблицу выше                                | Toggle влияет только на **новые** job | ⬜     |
-| 9.2 | `GET /api/files` + `GET /api/v1/files`                                | Список владельца, не чужие            | ⬜     |
-| 9.3 | `DELETE /api/files/:id` (+ v1) — диск + БД; связанные share → revoked | GET share → gone                      | ⬜     |
-| 9.4 | Скачать StoredFile: signed URL или ключ / cookie владельца            | TTL 15 мин на signed                  | ⬜     |
+| 9.1 | После completed применить таблицу выше                                | Toggle влияет только на **новые** job | ✅     |
+| 9.2 | `GET /api/files` + `GET /api/v1/files`                                | Список владельца, не чужие            | ✅     |
+| 9.3 | `DELETE /api/files/:id` (+ v1) — диск + БД; связанные share → revoked | GET share → gone                      | ✅     |
+| 9.4 | Скачать StoredFile: signed URL или ключ / cookie владельца            | TTL 15 мин на signed                  | ✅     |
 
 ---
 
@@ -317,6 +319,7 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 | GET    | `/api/v1/jobs/:id/download` | API key |
 | GET    | `/api/v1/me`                | API key |
 | GET    | `/api/v1/files`             | API key |
+| GET    | `/api/v1/files/:id/download` | API key |
 | DELETE | `/api/v1/files/:id`         | API key |
 | POST   | `/api/v1/shares`            | API key |
 | GET    | `/api/v1/shares`            | API key |
@@ -343,6 +346,7 @@ SPA-контракт (cookie), который ждёт
 | POST   | `/api/jobs`                 | cookie \| гость |
 | GET    | `/api/jobs/:id`             | cookie \| гость |
 | GET    | `/api/files`                | cookie          |
+| GET    | `/api/files/:id/download`   | cookie \| signed |
 | DELETE | `/api/files/:id`            | cookie          |
 | POST   | `/api/shares`               | cookie \| гость |
 | GET    | `/api/shares`               | cookie          |
@@ -433,15 +437,16 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ✅     |
 | **D** | §10 shares                           | Фронт D                 | ✅     |
-| **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
+| **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ✅     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | 🟡     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
 
 Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
-public). Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me` и shares v1 живые; files v1
-— с §9.
+public). Этап **E:** StoredFile после `save_conversions`, `GET/DELETE /api/files` и v1, signed
+download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, shares v1 и **files v1**
+живые.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -469,8 +474,8 @@ public). Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me` и 
 - [x] Гость: `POST /api/jobs` → poll → signed download (UC-01)
 - [x] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
 - [x] Пароли argon2; login без enumeration; правила пароля на сервере
-- [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs, `GET /me`, shares; files v1 — с §9
-- [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
+- [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs, `GET /me`, shares, files
+- [x] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
 - [x] Share: создать (гость и user), public GET, revoke → 410
 - [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
 - [ ] Rate limits §7.6; cron TTL исходников/результатов/shares

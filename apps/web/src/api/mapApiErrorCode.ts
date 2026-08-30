@@ -78,6 +78,7 @@ export const mapApiErrorCode = ({
   code,
   context,
   retryAfterSeconds,
+  message,
 }: MapApiErrorInput): string => {
   if (code === 'rate_limited' && retryAfterSeconds !== undefined) {
     return `Слишком много запросов. Подождите ${retryAfterSeconds} сек`;
@@ -85,6 +86,14 @@ export const mapApiErrorCode = ({
 
   if (code === 'invalid_request' && context === 'register') {
     return 'Этот email уже зарегистрирован';
+  }
+
+  if (code === 'invalid_request' && context === 'account') {
+    if (message === 'This email is already taken') {
+      return 'Этот email уже занят';
+    }
+
+    return 'Не удалось сохранить профиль. Проверьте текущий пароль и данные.';
   }
 
   if (code === 'unauthorized' && context === 'login') {
