@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ApiRequestError, NetworkError } from '@/api/http';
+import { ApiRequestError, NetworkError, apiDownload } from '@/api/http';
 import { getPublicShareRequest, toShareFileMeta } from '@/api/shares';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Spinner } from '@/components/Spinner/Spinner';
 import { isAvailableSharePreview, isUnavailableSharePreview } from '@/constants/share';
 import { getDocumentTitle } from '@/lib/getDocumentTitle';
-import { triggerBrowserDownload } from '@/lib/triggerBrowserDownload';
 import { useDocumentTitle } from '@/lib/useDocumentTitle';
 import type { ShareFileMeta } from '@/types/share';
 import { ShareAvailableCard } from './ShareAvailableCard/ShareAvailableCard';
@@ -46,11 +45,13 @@ export const SharePage = () => {
   const [retryCount, setRetryCount] = useState(0);
   const [viewToken, setViewToken] = useState(token);
   const [view, setView] = useState<SharePageView>(() => initialView(token));
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const skipFetch = isUnavailableSharePreview(token) || isAvailableSharePreview(token);
 
   if (token !== viewToken) {
     setViewToken(token);
     setView(initialView(token));
+    setDownloadError(null);
   }
 
   const pageTitle =
@@ -106,7 +107,27 @@ export const SharePage = () => {
       return;
     }
 
-    triggerBrowserDownload(view.downloadUrl);
+    const downloadUrl = view.downloadUrl;
+    void (async () => {
+      try {
+        await apiDownload(downloadUrl, {
+          errorContext: 'download',
+          notify: { network: false },
+        });
+        setDownloadError(null);
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setDownloadError(error.userMessage);
+          return;
+        }
+
+        setDownloadError('Файл больше недоступен (истёк срок хранения)');
+      }
+    })();
   };
 
   const handleRetry = () => {
@@ -123,7 +144,14 @@ export const SharePage = () => {
       )}
       {view.status === 'unavailable' && <ShareUnavailableCard />}
       {view.status === 'available' && (
-        <ShareAvailableCard file={view.file} onDownload={handleDownload} />
+        <>
+          <ShareAvailableCard file={view.file} onDownload={handleDownload} />
+          {downloadError && (
+            <Alert variant="error" live className={styles.downloadAlert}>
+              {downloadError}
+            </Alert>
+          )}
+        </>
       )}
       {view.status === 'error' && (
         <div className={styles.state}>

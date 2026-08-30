@@ -13,9 +13,7 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. Бизнес-логика конвертации только на
 API.
 
-**Прогресс:** этапы **A**, **A2**, **B**, **C**, **D**, **E**, **F** закрыты; `/api-docs` совпадает
-с каноном `/api/v1` (бэкенд **F**). Recovery живой (бэкенд **G**). Rate limit + TTL (бэкенд **H**)
-готовы. Дальше — фронт **G**: полировка 429/TTL и Playwright.
+**Прогресс:** этапы **A–G** закрыты. Playwright: гость convert, share, register → ключ в ЛК.
 
 ---
 
@@ -36,11 +34,12 @@ react-dropzone, Vitest, Playwright, Oxlint, React Compiler. Каркас пап�
 
 ---
 
-## 0.1. Текущий фокус: полировка после бэкенд H
+## 0.1. Текущий фокус: v1 закрыт
 
 Сессия SPA живая. Гость на главной: upload → poll 2 с → signed download → «Поделиться» создаёт
 `/s/:token`. Страница `/s/:token` читает public GET. ЛК: профиль, Telegram, toggle, files/shares.
-Recovery: forgot → код в mock Telegram → reset → login. Моки HTTP **не** делаем.
+Recovery: forgot → код в mock Telegram → reset → login. 429/5xx/offline — глобальный toast; 410 на
+скачивании — RU. Моки HTTP **не** делаем.
 
 | #   | Что делать сейчас                                                   | Где в плане    | Статус |
 | --- | ------------------------------------------------------------------- | -------------- | ------ |
@@ -59,9 +58,7 @@ Recovery: forgot → код в mock Telegram → reset → login. Моки HTTP 
 | 13  | «Поделиться» создаёт ссылку (гость и user)                          | §8.1           | ✅     |
 | 14  | Живой ЛК: files/shares, toggle, профиль                             | §9             | ✅     |
 | 15  | Recovery: forgot / reset / Telegram bind                            | §10.4, §9 #1   | ✅     |
-
-**Дальше:** фронт G — живые 429 («подождите N сек»), toast 5xx/offline, Playwright. Бэкенд **H**
-закрыт.
+| 16  | 429 / 5xx / offline toast; 410 на скачивании; Playwright            | §12, §13       | ✅     |
 
 ---
 
@@ -321,8 +318,8 @@ Layout: mobile — одна колонка; desktop — настройки св�
 | Тема          | Что сделать                                    | Nest? | Статус |
 | ------------- | ---------------------------------------------- | ----- | ------ |
 | 401 mid-flow  | Modal «Сессия истекла» → login                 | да    | ✅     |
-| 429           | «Слишком много запросов. Подождите N сек»      | да    | 🟡     |
-| 5xx / offline | Глобальный toast/banner                        | да    | 🟡     |
+| 429           | «Слишком много запросов. Подождите N сек»      | да    | ✅     |
+| 5xx / offline | Глобальный toast/banner                        | да    | ✅     |
 | Фокус         | Tab по кнопкам/полям; Escape в modal           | нет   | ✅     |
 | Skip-link     | «Перейти к содержимому» → `<main>`             | нет   | ✅     |
 | Title SPA     | `document.title` по маршруту                   | нет   | ✅     |
@@ -338,10 +335,10 @@ Layout: mobile — одна колонка; desktop — настройки св�
 | ---- | ---------- | ------------------------------------------------------------------------------------- | ----- | ------ |
 | Unit | Vitest     | Валидация файла (размер, расширение, 1 файл); правила пароля                          | нет   | ✅     |
 | Unit | Vitest     | Маппинг `error.code` → RU                                                             | да    | ✅     |
-| E2E  | Playwright | Гость: convert одного файла; share link open/download; register → API-ключ виден в ЛК | да    | ⏸      |
+| E2E  | Playwright | Гость: convert одного файла; share link open/download; register → API-ключ виден в ЛК | да    | ✅     |
 
-Unit по файлу и паролю закрыт. Маппинг `error.code` → RU закрыт с этапом B. Playwright — после
-бэкенд-C…H ([backend-implementation-plan.md](./backend-implementation-plan.md) §15–§16).
+Unit по файлу и паролю закрыт. Маппинг `error.code` → RU закрыт с этапом B. Playwright — гость
+convert, share, register → ключ в ЛК.
 
 ---
 
@@ -359,11 +356,10 @@ Unit по файлу и паролю закрыт. Маппинг `error.code` �
 | D      | §8.1                      | Бэкенд **D** ✅ (shares)                | Share create                                          | ✅     |
 | E      | §9 данные                 | Бэкенд **E** ✅ (ключи, профиль, files) | Живой ЛК                                              | ✅     |
 | F      | §10.4                     | Бэкенд **G** ✅ (Telegram mock + reset) | Recovery end-to-end                                   | ✅     |
-| G      | §12 API-ошибки, e2e       | Бэкенд **H** ✅ (429, TTL)              | Полировка, Playwright                                 | ⬜     |
+| G      | §12 API-ошибки, e2e       | Бэкенд **H** ✅ (429, TTL)              | Полировка, Playwright                                 | ✅     |
 
-Моки не используем. Этапы **A2**, **B**, **C**, **D**, **E** и **F** закрыты; `/api-docs` — по
-канону бэкенд **F**. Бэкенд **H** закрыт; фронт G можно делать. Пути не менять вразнобой:
-синхронизировать оба плана (бэкенд §17).
+Моки не используем. Этапы **A2**, **B–G** закрыты. Пути не менять вразнобой: синхронизировать оба
+плана (бэкенд §17).
 
 Легенда статусов: ✅ готово · 🟡 частично (вёрстка / заглушка) · ⬜ не начато · ⏸ ждём бэкенд /
 пропущено.
@@ -380,10 +376,10 @@ Unit по файлу и паролю закрыт. Маппинг `error.code` �
 - [x] Recovery: forgot/reset живые; Telegram bind/unbind в ЛК
 - [x] `/api-docs` с curl + fetch, лимитами и ошибками (пути = бэкенд §12)
 - [x] A11y/адаптив без Nest: skip-link, `document.title`, 404, hit-area ≥44px
-- [ ] Ошибки UI на русском по матрице §5.1 (файл — ✅; login/register — ✅; recovery — ✅; share —
-      ✅; 401 mid-flow — ✅; 429/5xx обработчик готов, живые лимиты — фронт G)
+- [x] Ошибки UI на русском по матрице §5.1 (файл — ✅; login/register — ✅; recovery — ✅; share —
+      ✅; 401 mid-flow — ✅; 429/5xx/offline — ✅; 410 download — ✅)
 - [x] Unit (файл, пароль)
-- [ ] Playwright — фронт G
+- [x] Playwright — фронт G
 - [x] Нет `X-API-Key` в localStorage; сессия только cookie
 - [x] Вне scope не реализовано: batch, светлая тема, живой Telegram Bot, 2FA
 

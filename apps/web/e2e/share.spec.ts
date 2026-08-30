@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 import { createJpegFile } from './helpers/files';
 
 test.describe('Share-ссылка', () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test('истёкшая ссылка больше недоступна', async ({ page }) => {
     await page.goto('/s/expired');
 
@@ -12,9 +14,7 @@ test.describe('Share-ссылка', () => {
     );
   });
 
-  test.fixme('после Nest: получатель открывает ссылку без входа и скачивает файл', async ({
-    page,
-  }) => {
+  test('получатель открывает ссылку без входа и скачивает файл', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('radio', { name: 'JPG → PNG' }).click();
     await page.getByLabel('Выбрать файл для конвертации').setInputFiles(createJpegFile());

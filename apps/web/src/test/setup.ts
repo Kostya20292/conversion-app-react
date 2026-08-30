@@ -3,6 +3,50 @@ import { afterEach, beforeEach } from 'vitest';
 import { useAuthStore } from '@/app/authStore';
 import '@testing-library/jest-dom/vitest';
 
+class MemoryStorage implements Storage {
+  private readonly data = new Map<string, string>();
+
+  get length(): number {
+    return this.data.size;
+  }
+
+  clear(): void {
+    this.data.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.data.get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    return [...this.data.keys()][index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.data.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.data.set(key, String(value));
+  }
+}
+
+const installWebStorage = (name: 'localStorage' | 'sessionStorage'): void => {
+  const current = globalThis[name];
+  if (current && typeof current.clear === 'function') {
+    return;
+  }
+
+  Object.defineProperty(globalThis, name, {
+    configurable: true,
+    enumerable: true,
+    value: new MemoryStorage(),
+  });
+};
+
+installWebStorage('localStorage');
+installWebStorage('sessionStorage');
+
 const resetAuthStore = () => {
   useAuthStore.setState({
     user: null,

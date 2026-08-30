@@ -42,6 +42,7 @@ export const createShareRequest = async (
     method: 'POST',
     body: JSON.stringify(body),
     errorContext: 'share',
+    notify: { sessionExpired: true },
     signal: options?.signal,
   });
 };
@@ -76,7 +77,7 @@ export const getPublicShareRequest = async (
 ): Promise<SharePublicDto> =>
   apiFetch<SharePublicDto>(`/api/v1/public/s/${encodeURIComponent(token)}`, {
     errorContext: 'share',
-    notify: { sessionExpired: false, serverError: false },
+    notify: { sessionExpired: false, serverError: false, network: false },
     signal: options?.signal,
   });
 

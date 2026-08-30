@@ -44,6 +44,24 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: convertly
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d convertly" --health-interval 10s --health-timeout
+          5s --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/convertly
+      JWT_SECRET: ci-test-jwt-secret-not-for-production
+      CORS_ORIGIN: http://127.0.0.1:5173
+      STORAGE_ROOT: storage
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

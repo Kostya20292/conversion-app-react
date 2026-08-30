@@ -10,6 +10,7 @@ import styles from './JobStatus.module.scss';
 export const JobStatus = ({
   phase,
   error,
+  downloadError,
   isSharing = false,
   shareUrl,
   shareError,
@@ -45,6 +46,11 @@ export const JobStatus = ({
             Поделиться
           </Button>
         </div>
+        {downloadError && (
+          <Alert variant="error" live className={styles.alert}>
+            {downloadError}
+          </Alert>
+        )}
         {shareError && (
           <Alert variant="error" live className={styles.alert}>
             {shareError}

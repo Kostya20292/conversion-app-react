@@ -12,7 +12,7 @@ import styles from './AccountApiKeySection.module.scss';
 const FALLBACK_MASKED_KEY = maskApiKey('cv_live_');
 
 const isPlaintextKey = (key: string | undefined): key is string =>
-  Boolean(key) && !key.includes('•');
+  typeof key === 'string' && key.length > 0 && !key.includes('•');
 
 export const AccountApiKeySection = ({
   onNotify,

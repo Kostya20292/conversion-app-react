@@ -1,5 +1,6 @@
 import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ApiRequestError, NetworkError, apiDownload } from '@/api/http';
 import { useAuthStore } from '@/app/authStore';
 import { Banner } from '@/components/Banner/Banner';
 import { Button } from '@/components/Button/Button';
@@ -11,7 +12,6 @@ import { CONVERSION_ROUTE_OPTIONS } from '@/constants/conversion';
 import { useConversionStore } from '@/features/conversion/conversionStore';
 import { copyToClipboard } from '@/lib/copyToClipboard';
 import { toAbsoluteUrl } from '@/lib/toAbsoluteUrl';
-import { triggerBrowserDownload } from '@/lib/triggerBrowserDownload';
 import type { ConversionRoute } from '@/types/conversion';
 import styles from './HomePage.module.scss';
 
@@ -35,21 +35,26 @@ export const HomePage = () => {
   const dropzoneError = phase === 'failed' ? null : error;
   const isAuthenticated = useAuthStore((state) => state.status) === 'authenticated';
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const handleRouteChange = (nextRoute: ConversionRoute) => {
+    setDownloadError(null);
     setRoute(nextRoute);
   };
 
   const handleSelectFiles = (files: File[]) => {
+    setDownloadError(null);
     selectFiles(files);
   };
 
   const handleClearFile = () => {
+    setDownloadError(null);
     clearFile();
   };
 
   const handleConvert = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setDownloadError(null);
     void startConversion();
   };
 
@@ -59,7 +64,26 @@ export const HomePage = () => {
       return;
     }
 
-    triggerBrowserDownload(downloadUrl);
+    void (async () => {
+      try {
+        await apiDownload(downloadUrl, {
+          errorContext: 'download',
+          notify: { network: false },
+        });
+        setDownloadError(null);
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setDownloadError(error.userMessage);
+          return;
+        }
+
+        setDownloadError('Файл больше недоступен (истёк срок хранения)');
+      }
+    })();
   };
 
   const handleShare = () => {
@@ -80,6 +104,7 @@ export const HomePage = () => {
   };
 
   const handleRetry = () => {
+    setDownloadError(null);
     retryConversion();
   };
 
@@ -121,6 +146,7 @@ export const HomePage = () => {
             <JobStatus
               phase={phase}
               error={error}
+              downloadError={downloadError}
               isSharing={isSharing}
               shareUrl={shareUrl}
               shareError={shareError}

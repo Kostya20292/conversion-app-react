@@ -15,8 +15,7 @@ import { getFirstErrorField } from '@/lib/getFirstErrorField';
 import styles from './ForgotPasswordPage.module.scss';
 
 const FORGOT_EMAIL_ID = 'forgot-email';
-const FORGOT_SUCCESS_MESSAGE =
-  'Если к аккаунту привязан Telegram, откройте бота и введите код. Сообщение одинаково, есть аккаунт или нет.';
+const FORGOT_SUCCESS_MESSAGE = 'Привяжите Telegram в личном кабинете заранее.';
 
 export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -89,7 +88,7 @@ export const ForgotPasswordPage = () => {
       <div className={styles.card}>
         <h1 className={styles.title}>Восстановление пароля</h1>
         <p className={styles.lead}>
-          Укажите email — мы отправим инструкцию, если аккаунт существует.
+          Укажите email. Если Telegram привязан, откройте бота — туда придёт код.
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>

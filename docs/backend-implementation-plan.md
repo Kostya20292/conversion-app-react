@@ -12,8 +12,7 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–13 готовы (этап **H**: rate limit + TTL-cron). Дальше — добор тестов (§15, этап
-**I**) и фронт **G** (429/TTL, Playwright). Фронт закрыл A2, **B–F**.
+**Прогресс:** §1–15 готовы (этап **I**: unit, HTTP, Playwright). Фронт закрыл A2, **B–G**.
 
 ---
 
@@ -31,11 +30,10 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: тесты и фронт G
+## 0.1. Текущий фокус: v1 закрыт
 
-Auth cookie, jobs, worker, signed download, shares, StoredFile, `/api/v1`, recovery и **rate limit
-
-- TTL-cron** закрыты. Дальше — §15 (этап **I**) и фронт **G**.
+Auth cookie, jobs, worker, signed download, shares, StoredFile, `/api/v1`, recovery, **rate limit +
+TTL-cron** и минимум тестов (§15) закрыты.
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -418,11 +416,11 @@ SPA-контракт (cookie), который ждёт
 Протокол черновик → заморозка — [testing.mdc](../.cursor/rules/testing.mdc). Не подгонять тесты под
 код. Моки приложения не используем; LibreOffice в CI может отсутствовать.
 
-| Тип         | Инструмент | Где                         | Минимальный набор v1                                                              | Статус  |
-| ----------- | ---------- | --------------------------- | --------------------------------------------------------------------------------- | ------- |
-| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL       | ✅      |
-| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | ✅      |
-| E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК (когда фронт на этапе G) | ⏸ фронт |
+| Тип         | Инструмент | Где                         | Минимальный набор v1                                                        | Статус |
+| ----------- | ---------- | --------------------------- | --------------------------------------------------------------------------- | ------ |
+| Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL | ✅     |
+| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410   | ✅     |
+| E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК                    | ✅     |
 
 Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:
 register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL, share 410,
@@ -446,14 +444,15 @@ rate limit §7.6, TTL-cleanup — есть. LibreOffice: HTTP-кейс DOCX→PD
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ✅     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ✅     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ✅     |
-| **I** | §15 тесты                            | Регрессия               | 🟡     |
+| **I** | §15 тесты                            | Регрессия               | ✅     |
 
 Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
 public). Этап **E:** StoredFile после `save_conversions`, `GET/DELETE /api/files` и v1, signed
 download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, shares v1 и **files v1**
 живые; фронт `/api-docs` закрыт по этому канону. Этап **G:** Telegram mock bind/unbind,
 forgot/reset. Этап **H:** login/convert throttler + `CleanupService` (uploads 1 ч, results 24 ч,
-orphans). Этап **I:** HTTP/unit минимума зелёные; Playwright — фронт G.
+orphans). Этап **I:** HTTP/unit минимума и Playwright (гость convert, share, register → ключ)
+зелёные.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -489,7 +488,7 @@ orphans). Этап **I:** HTTP/unit минимума зелёные; Playwright 
 - [x] Telegram — mock; живой бот не требуется
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
 - [x] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410, rate limit,
-      TTL; Playwright — фронт G
+      TTL; Playwright — гость convert, share, register → ключ в ЛК
 - [x] Нет раздачи `storage/` статикой; нет секретов в репо
 
 ---

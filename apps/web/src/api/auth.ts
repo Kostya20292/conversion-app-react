@@ -22,6 +22,7 @@ const AUTH_NOTIFY = {
   sessionExpired: false,
   rateLimited: false,
   serverError: true,
+  network: false,
 } as const;
 
 export const toAuthUser = (dto: AuthUserDto): AuthUser => ({
@@ -70,7 +71,9 @@ export const registerRequest = async (
   return { user: toAuthUser(dto), apiKey: dto.api_key };
 };
 
-export const getMeRequest = async (options?: Pick<ApiFetchOptions, 'signal'>): Promise<AuthUser> => {
+export const getMeRequest = async (
+  options?: Pick<ApiFetchOptions, 'signal'>,
+): Promise<AuthUser> => {
   const dto = await apiFetch<AuthUserDto>('/api/auth/me', {
     notify: { sessionExpired: false, rateLimited: false, serverError: false },
     signal: options?.signal,
@@ -94,7 +97,7 @@ export const forgotPasswordRequest = async (
   await apiFetch<void>('/api/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email }),
-    notify: { sessionExpired: false },
+    notify: { sessionExpired: false, network: false },
     signal: options?.signal,
   });
 };
@@ -107,7 +110,7 @@ export const resetPasswordRequest = async (
     method: 'POST',
     body: JSON.stringify({ code: input.code, new_password: input.password }),
     errorContext: 'reset',
-    notify: { sessionExpired: false },
+    notify: { sessionExpired: false, network: false },
     signal: options?.signal,
   });
 };

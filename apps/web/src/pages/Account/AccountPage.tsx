@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteFileRequest, listFilesRequest } from '@/api/files';
-import { ApiRequestError, NetworkError } from '@/api/http';
+import { ApiRequestError, NetworkError, apiDownload } from '@/api/http';
 import { createShareRequest, listSharesRequest, revokeShareRequest } from '@/api/shares';
 import { patchMeRequest } from '@/api/users';
 import { useAuthStore } from '@/app/authStore';
@@ -11,7 +11,6 @@ import { Toast } from '@/components/Toast/Toast';
 import { Toggle } from '@/components/Toggle/Toggle';
 import { copyToClipboard } from '@/lib/copyToClipboard';
 import { toAbsoluteUrl } from '@/lib/toAbsoluteUrl';
-import { triggerBrowserDownload } from '@/lib/triggerBrowserDownload';
 import type { ShareLinkItem, StoredFile } from '@/types/account';
 import { AccountApiKeySection } from './AccountApiKeySection/AccountApiKeySection';
 import { AccountFileList } from './AccountFileList/AccountFileList';
@@ -48,6 +47,10 @@ export const AccountPage = () => {
   };
 
   const notifyCaught = (error: unknown, fallback: string) => {
+    if (error instanceof NetworkError) {
+      return;
+    }
+
     if (error instanceof ApiRequestError && error.code === 'internal_error') {
       return;
     }
@@ -76,6 +79,10 @@ export const AccountPage = () => {
           return;
         }
 
+        if (error instanceof NetworkError) {
+          return;
+        }
+
         if (error instanceof ApiRequestError && error.code === 'internal_error') {
           return;
         }
@@ -97,7 +104,16 @@ export const AccountPage = () => {
   }, []);
 
   const handleDownloadFile = (file: StoredFile) => {
-    triggerBrowserDownload(toAbsoluteUrl(file.downloadUrl));
+    void (async () => {
+      try {
+        await apiDownload(file.downloadUrl, {
+          errorContext: 'download',
+          notify: { sessionExpired: true, network: false },
+        });
+      } catch (error) {
+        notifyCaught(error, 'Файл больше недоступен (истёк срок хранения)');
+      }
+    })();
   };
 
   const handleShareFile = (file: StoredFile) => {

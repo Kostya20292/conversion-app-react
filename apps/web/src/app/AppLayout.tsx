@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { setHttpErrorHandlers } from '@/api/http';
-import { mapApiErrorCode } from '@/api/mapApiErrorCode';
+import { mapApiErrorCode, mapNetworkError } from '@/api/mapApiErrorCode';
 import { Footer } from '@/components/Footer/Footer';
 import { Header } from '@/components/Header/Header';
 import { Modal } from '@/components/Modal/Modal';
@@ -49,6 +49,9 @@ export const AppLayout = () => {
       },
       onServerError: () => {
         setToastMessage(mapApiErrorCode({ code: 'internal_error' }));
+      },
+      onNetworkError: () => {
+        setToastMessage(mapNetworkError());
       },
     });
 

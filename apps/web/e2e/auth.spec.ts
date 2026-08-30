@@ -19,7 +19,7 @@ test.describe('Авторизация', () => {
     await expect(page.getByRole('heading', { name: 'Восстановление пароля' })).toBeVisible();
   });
 
-  test.fixme('после Nest: регистрация открывает ЛК, где виден API-ключ', async ({ page }) => {
+  test('регистрация открывает ЛК, где виден API-ключ', async ({ page }) => {
     const email = `user-${Date.now()}@example.com`;
 
     await page.goto('/register');
@@ -33,9 +33,7 @@ test.describe('Авторизация', () => {
     await expect(page.getByText(/cv_live_/)).toBeVisible();
   });
 
-  test.fixme('после Nest: неверный пароль показывает общее сообщение без уточнения поля', async ({
-    page,
-  }) => {
+  test('неверный пароль показывает общее сообщение без уточнения поля', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('Email').fill('nobody@example.com');
     await page.getByLabel('Пароль').fill('Wrongpass1');
