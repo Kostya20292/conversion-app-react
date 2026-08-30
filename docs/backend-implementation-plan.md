@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–10 готовы (включая StoredFile). Дальше — Telegram mock / recovery (§11)
-или rate limit + cron (§13). Фронт закрыл A2, **B**, **C**, **D** и **E** (живой ЛК).
+**Прогресс:** §1–10 и публичное `/api/v1` (**F**) готовы. Дальше — Telegram mock / recovery (§11)
+или rate limit + cron (§13). Фронт закрыл A2 (включая `/api-docs`), **B**, **C**, **D** и **E**.
 
 ---
 
@@ -33,9 +33,8 @@ IP), не публичный `/api/v1`.
 
 ## 0.1. Текущий фокус: Telegram mock / recovery
 
-Auth cookie, jobs, worker, signed download, **shares** и **StoredFile** закрыты. Дальше — §11
-(Telegram mock + reset) или §13 (rate limit + cron). Фронт **E** (живой ЛК) закрыт. Моки HTTP
-**не** делаем (как на фронте).
+Auth cookie, jobs, worker, signed download, **shares**, **StoredFile** и **`/api/v1`** закрыты.
+Дальше — §11 (Telegram mock + reset) или §13 (rate limit + cron). Фронт **E** и `/api-docs` закрыты.
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -312,19 +311,20 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 
 Поверх тех же сервисов, что UI. Полная таблица ТЗ §7.3:
 
-| Метод  | Путь                        | Auth    |
-| ------ | --------------------------- | ------- |
-| POST   | `/api/v1/jobs`              | API key |
-| GET    | `/api/v1/jobs/:id`          | API key |
-| GET    | `/api/v1/jobs/:id/download` | API key |
-| GET    | `/api/v1/me`                | API key |
-| GET    | `/api/v1/files`             | API key |
-| GET    | `/api/v1/files/:id/download` | API key |
-| DELETE | `/api/v1/files/:id`         | API key |
-| POST   | `/api/v1/shares`            | API key |
-| GET    | `/api/v1/shares`            | API key |
-| DELETE | `/api/v1/shares/:token`     | API key |
-| GET    | `/api/v1/public/s/:token`   | —       |
+| Метод  | Путь                               | Auth    |
+| ------ | ---------------------------------- | ------- |
+| POST   | `/api/v1/jobs`                     | API key |
+| GET    | `/api/v1/jobs/:id`                 | API key |
+| GET    | `/api/v1/jobs/:id/download`        | API key |
+| GET    | `/api/v1/me`                       | API key |
+| GET    | `/api/v1/files`                    | API key |
+| GET    | `/api/v1/files/:id/download`       | API key |
+| DELETE | `/api/v1/files/:id`                | API key |
+| POST   | `/api/v1/shares`                   | API key |
+| GET    | `/api/v1/shares`                   | API key |
+| DELETE | `/api/v1/shares/:token`            | API key |
+| GET    | `/api/v1/public/s/:token`          | —       |
+| GET    | `/api/v1/public/s/:token/download` | —       |
 
 Без ключа / неверный ключ → `401 unauthorized`. Файлы с `save_conversions` сохраняются так же, как
 из UI.
@@ -332,25 +332,25 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 SPA-контракт (cookie), который ждёт
 [frontend-implementation-plan.md](./frontend-implementation-plan.md) §4:
 
-| Метод  | Путь                        | Auth            |
-| ------ | --------------------------- | --------------- |
-| POST   | `/api/auth/register`        | —               |
-| POST   | `/api/auth/login`           | —               |
-| POST   | `/api/auth/logout`          | cookie          |
-| GET    | `/api/auth/me`              | cookie          |
-| POST   | `/api/auth/forgot-password` | —               |
-| POST   | `/api/auth/reset-password`  | —               |
-| PATCH  | `/api/users/me`             | cookie          |
-| GET    | `/api/api-keys`             | cookie          |
-| POST   | `/api/api-keys/reissue`     | cookie          |
-| POST   | `/api/jobs`                 | cookie \| гость |
-| GET    | `/api/jobs/:id`             | cookie \| гость |
-| GET    | `/api/files`                | cookie          |
+| Метод  | Путь                        | Auth             |
+| ------ | --------------------------- | ---------------- |
+| POST   | `/api/auth/register`        | —                |
+| POST   | `/api/auth/login`           | —                |
+| POST   | `/api/auth/logout`          | cookie           |
+| GET    | `/api/auth/me`              | cookie           |
+| POST   | `/api/auth/forgot-password` | —                |
+| POST   | `/api/auth/reset-password`  | —                |
+| PATCH  | `/api/users/me`             | cookie           |
+| GET    | `/api/api-keys`             | cookie           |
+| POST   | `/api/api-keys/reissue`     | cookie           |
+| POST   | `/api/jobs`                 | cookie \| гость  |
+| GET    | `/api/jobs/:id`             | cookie \| гость  |
+| GET    | `/api/files`                | cookie           |
 | GET    | `/api/files/:id/download`   | cookie \| signed |
-| DELETE | `/api/files/:id`            | cookie          |
-| POST   | `/api/shares`               | cookie \| гость |
-| GET    | `/api/shares`               | cookie          |
-| DELETE | `/api/shares/:token`        | cookie          |
+| DELETE | `/api/files/:id`            | cookie           |
+| POST   | `/api/shares`               | cookie \| гость  |
+| GET    | `/api/shares`               | cookie           |
+| DELETE | `/api/shares/:token`        | cookie           |
 
 Владение job:
 
@@ -438,7 +438,7 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 | **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ✅     |
 | **D** | §10 shares                           | Фронт D                 | ✅     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ✅     |
-| **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | 🟡     |
+| **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ✅     |
 | **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
@@ -446,7 +446,7 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
 public). Этап **E:** StoredFile после `save_conversions`, `GET/DELETE /api/files` и v1, signed
 download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, shares v1 и **files v1**
-живые.
+живые; фронт `/api-docs` закрыт по этому канону.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
