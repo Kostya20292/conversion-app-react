@@ -235,11 +235,19 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
           Статус: {isTelegramBound ? 'Привязан' : 'Не привязан'}. Нужен для восстановления пароля.
         </p>
         {isTelegramBound ? (
-          <Button variant="danger" onClick={handleOpenUnbindModal}>
+          <Button
+            variant="danger"
+            className={styles.telegramAction}
+            onClick={handleOpenUnbindModal}
+          >
             Отвязать Telegram
           </Button>
         ) : (
-          <Button variant="secondary" onClick={handleBindTelegram}>
+          <Button
+            variant="secondary"
+            className={styles.telegramAction}
+            onClick={handleBindTelegram}
+          >
             Привязать Telegram
           </Button>
         )}

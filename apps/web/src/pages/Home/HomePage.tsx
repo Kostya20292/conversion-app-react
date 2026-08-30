@@ -1,4 +1,4 @@
-import type { SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/app/authStore';
 import { Banner } from '@/components/Banner/Banner';
@@ -6,8 +6,12 @@ import { Button } from '@/components/Button/Button';
 import { Dropzone } from '@/components/Dropzone/Dropzone';
 import { JobStatus } from '@/components/JobStatus/JobStatus';
 import { SegmentedControl } from '@/components/SegmentedControl/SegmentedControl';
+import { Toast } from '@/components/Toast/Toast';
 import { CONVERSION_ROUTE_OPTIONS } from '@/constants/conversion';
 import { useConversionStore } from '@/features/conversion/conversionStore';
+import { copyToClipboard } from '@/lib/copyToClipboard';
+import { toAbsoluteUrl } from '@/lib/toAbsoluteUrl';
+import { triggerBrowserDownload } from '@/lib/triggerBrowserDownload';
 import type { ConversionRoute } from '@/types/conversion';
 import styles from './HomePage.module.scss';
 
@@ -21,11 +25,16 @@ export const HomePage = () => {
   const selectFiles = useConversionStore((state) => state.selectFiles);
   const clearFile = useConversionStore((state) => state.clearFile);
   const startConversion = useConversionStore((state) => state.startConversion);
+  const createShare = useConversionStore((state) => state.createShare);
   const retryConversion = useConversionStore((state) => state.retryConversion);
+  const shareUrl = useConversionStore((state) => state.shareUrl);
+  const shareError = useConversionStore((state) => state.shareError);
+  const isSharing = useConversionStore((state) => state.isSharing);
   const isBusy = phase === 'uploading' || phase === 'processing';
   const canConvert = Boolean(file) && !error && phase === 'idle';
   const dropzoneError = phase === 'failed' ? null : error;
   const isAuthenticated = useAuthStore((state) => state.status) === 'authenticated';
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleRouteChange = (nextRoute: ConversionRoute) => {
     setRoute(nextRoute);
@@ -50,15 +59,25 @@ export const HomePage = () => {
       return;
     }
 
-    const anchor = document.createElement('a');
-    anchor.href = downloadUrl;
-    anchor.setAttribute('download', '');
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
+    triggerBrowserDownload(downloadUrl);
   };
 
-  const handleShare = () => {};
+  const handleShare = () => {
+    void (async () => {
+      await createShare();
+      const url = useConversionStore.getState().shareUrl;
+      if (!url) {
+        return;
+      }
+
+      const copied = await copyToClipboard(toAbsoluteUrl(url));
+      setToastMessage(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
+    })();
+  };
+
+  const handleCloseToast = () => {
+    setToastMessage(null);
+  };
 
   const handleRetry = () => {
     retryConversion();
@@ -102,6 +121,9 @@ export const HomePage = () => {
             <JobStatus
               phase={phase}
               error={error}
+              isSharing={isSharing}
+              shareUrl={shareUrl}
+              shareError={shareError}
               onDownload={handleDownload}
               onShare={handleShare}
               onRetry={handleRetry}
@@ -170,6 +192,8 @@ export const HomePage = () => {
           </Link>
         </div>
       </section>
+
+      <Toast open={Boolean(toastMessage)} message={toastMessage ?? ''} onClose={handleCloseToast} />
     </div>
   );
 };

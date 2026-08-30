@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { formatDateTime } from '@/lib/formatDateTime';
 import { formatFileSize } from '@/lib/formatFileSize';
@@ -10,10 +9,6 @@ export const ShareAvailableCard = ({ file, onDownload }: ShareAvailableCardProps
   <div className={styles.card}>
     <h1 className={styles.title}>{file.name}</h1>
     <p className={styles.lead}>Файл доступен по ссылке. Вход не нужен.</p>
-
-    <Alert variant="info" className={styles.notice}>
-      Метаданные пока статические. Скачивание подключится после API.
-    </Alert>
 
     <dl className={styles.meta}>
       <div className={styles.metaRow}>

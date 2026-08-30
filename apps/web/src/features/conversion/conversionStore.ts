@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ApiRequestError, NetworkError } from '@/api/http';
 import { createJobRequest, getJobRequest } from '@/api/jobs';
+import { createShareRequest } from '@/api/shares';
 import { mapApiErrorCode } from '@/api/mapApiErrorCode';
 import { DEFAULT_CONVERSION_ROUTE, ROUTE_TARGET_FORMAT } from '@/constants/conversion';
 import type { ConversionJob } from '@/types/api';
@@ -16,10 +17,14 @@ type ConversionState = {
   error: string | null;
   phase: ConversionPhase;
   job: ConversionJob | null;
+  shareUrl: string | null;
+  shareError: string | null;
+  isSharing: boolean;
   setRoute: (route: ConversionRoute) => void;
   selectFiles: (files: readonly File[]) => void;
   clearFile: () => void;
   startConversion: () => Promise<void>;
+  createShare: () => Promise<void>;
   retryConversion: () => void;
 };
 
@@ -41,6 +46,9 @@ const beginConversionRun = (): AbortController => {
 const idleFileState = {
   phase: 'idle' as const,
   job: null,
+  shareUrl: null,
+  shareError: null,
+  isSharing: false,
 };
 
 export const useConversionStore = create<ConversionState>((set, get) => ({
@@ -49,6 +57,9 @@ export const useConversionStore = create<ConversionState>((set, get) => ({
   error: null,
   phase: 'idle',
   job: null,
+  shareUrl: null,
+  shareError: null,
+  isSharing: false,
   setRoute: (route) => {
     beginConversionRun();
     const { file } = get();
@@ -91,7 +102,14 @@ export const useConversionStore = create<ConversionState>((set, get) => ({
 
     const controller = beginConversionRun();
     const runId = conversionRun;
-    set({ phase: 'uploading', error: null, job: null });
+    set({
+      phase: 'uploading',
+      error: null,
+      job: null,
+      shareUrl: null,
+      shareError: null,
+      isSharing: false,
+    });
 
     try {
       const created = await createJobRequest(
@@ -133,8 +151,37 @@ export const useConversionStore = create<ConversionState>((set, get) => ({
       throw caught;
     }
   },
+  createShare: async () => {
+    const { job, isSharing, shareUrl } = get();
+    if (isSharing || shareUrl || !job || job.status !== 'completed') {
+      return;
+    }
+
+    const runId = conversionRun;
+    set({ isSharing: true, shareError: null });
+
+    try {
+      const created = await createShareRequest({ jobId: job.id });
+      if (runId !== conversionRun) {
+        return;
+      }
+
+      set({ shareUrl: created.url, isSharing: false, shareError: null });
+    } catch (caught) {
+      if (runId !== conversionRun || isAbortError(caught)) {
+        return;
+      }
+
+      if (caught instanceof NetworkError || caught instanceof ApiRequestError) {
+        set({ isSharing: false, shareError: caught.userMessage });
+        return;
+      }
+
+      throw caught;
+    }
+  },
   retryConversion: () => {
     beginConversionRun();
-    set({ phase: 'idle', error: null, job: null });
+    set({ phase: 'idle', error: null, job: null, shareUrl: null, shareError: null });
   },
 }));

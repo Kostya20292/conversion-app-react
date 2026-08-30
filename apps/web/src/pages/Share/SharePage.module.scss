@@ -1,0 +1,11 @@
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  width: min(var(--auth-max), 100%);
+}
+
+.retry {
+  min-width: 160px;
+}

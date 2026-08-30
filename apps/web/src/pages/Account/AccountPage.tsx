@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { listApiKeysRequest } from '@/api/api-keys';
 import { ApiRequestError, NetworkError } from '@/api/http';
 import { useAuthStore } from '@/app/authStore';
 import { Button } from '@/components/Button/Button';
@@ -22,7 +21,6 @@ export const AccountPage = () => {
   const issuedApiKey = useAuthStore((state) => state.issuedApiKey);
   const saveConversions = useAuthStore((state) => state.user?.saveConversions) ?? false;
   const logout = useAuthStore((state) => state.logout);
-  const [listedApiKey, setListedApiKey] = useState<string | null>(null);
   const [shares, setShares] = useState<ShareLinkItem[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<StoredFile | null>(null);
@@ -30,30 +28,6 @@ export const AccountPage = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [saveConversionsOverride, setSaveConversionsOverride] = useState<boolean | null>(null);
   const saveConversionsChecked = saveConversionsOverride ?? saveConversions;
-
-  useEffect(() => {
-    if (issuedApiKey) {
-      return;
-    }
-
-    const controller = new AbortController();
-    void listApiKeysRequest({ signal: controller.signal })
-      .then((response) => {
-        const activeKey = response.keys[0];
-        if (activeKey) {
-          setListedApiKey(activeKey.masked_key);
-        }
-      })
-      .catch((error: unknown) => {
-        if (error instanceof Error && error.name === 'AbortError') {
-          return;
-        }
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [issuedApiKey]);
 
   const handleNotify = (message: string) => {
     setToastMessage(message);
@@ -111,8 +85,6 @@ export const AccountPage = () => {
     setShareToRevoke(null);
   };
 
-  const displayedApiKey = issuedApiKey ?? listedApiKey ?? undefined;
-
   return (
     <div className={`container ${styles.page}`}>
       <h1 className={styles.title}>Личный кабинет</h1>
@@ -123,8 +95,8 @@ export const AccountPage = () => {
           <AccountProfileSection onNotify={handleNotify} />
           <AccountApiKeySection
             onNotify={handleNotify}
-            apiKey={displayedApiKey}
-            initiallyVisible={Boolean(issuedApiKey)}
+            apiKey={issuedApiKey ?? undefined}
+            hideIfUnknown
           />
           <section className={styles.card} aria-labelledby="save-title">
             <h2 id="save-title" className={styles.srOnly}>

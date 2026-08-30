@@ -12,6 +12,8 @@ const resetAuthStore = () => {
 };
 
 beforeEach(() => {
+  sessionStorage.clear();
+  localStorage.clear();
   resetAuthStore();
 });
 

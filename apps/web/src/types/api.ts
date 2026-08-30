@@ -52,3 +52,17 @@ export type AuthUserDto = {
 export type RegisterDto = AuthUserDto & {
   api_key: string;
 };
+
+export type ShareCreatedDto = {
+  token: string;
+  url: string;
+  expires_at: string;
+};
+
+export type SharePublicDto = {
+  name: string;
+  format: JobFileFormat;
+  size_bytes: number;
+  expires_at: string;
+  download_url: string;
+};

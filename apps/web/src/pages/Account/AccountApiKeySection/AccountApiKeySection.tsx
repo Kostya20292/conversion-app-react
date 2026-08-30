@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { reissueApiKeyRequest } from '@/api/api-keys';
+import { ApiRequestError, NetworkError } from '@/api/http';
+import { useAuthStore } from '@/app/authStore';
 import { Button } from '@/components/Button/Button';
 import { Modal } from '@/components/Modal/Modal';
 import { copyToClipboard } from '@/lib/copyToClipboard';
@@ -6,31 +9,40 @@ import { maskApiKey } from '@/lib/maskApiKey';
 import type { AccountApiKeySectionProps } from './AccountApiKeySection.types';
 import styles from './AccountApiKeySection.module.scss';
 
-const INITIAL_PLACEHOLDER_KEY = 'cv_live_placeholder_not_secret';
+const FALLBACK_MASKED_KEY = maskApiKey('cv_live_');
 
-const createPlaceholderApiKey = (): string => {
-  const suffix = crypto.randomUUID().slice(0, 8);
-  return `cv_live_placeholder_${suffix}`;
-};
+const isPlaintextKey = (key: string | undefined): key is string =>
+  Boolean(key) && !key.includes('•');
 
 export const AccountApiKeySection = ({
   onNotify,
   apiKey: apiKeyProp,
   initiallyVisible = false,
+  hideIfUnknown = false,
 }: AccountApiKeySectionProps) => {
-  const [reissuedKey, setReissuedKey] = useState<string | null>(null);
-  const [isKeyVisible, setIsKeyVisible] = useState(initiallyVisible);
+  const rememberIssuedApiKey = useAuthStore((state) => state.rememberIssuedApiKey);
+  const plaintextKey = isPlaintextKey(apiKeyProp) ? apiKeyProp : null;
+  const [isKeyVisible, setIsKeyVisible] = useState(initiallyVisible && Boolean(plaintextKey));
   const [isReissueModalOpen, setIsReissueModalOpen] = useState(false);
-  const apiKey = reissuedKey ?? apiKeyProp ?? INITIAL_PLACEHOLDER_KEY;
-
-  const displayedKey = isKeyVisible ? apiKey : maskApiKey(apiKey);
+  const [isReissuing, setIsReissuing] = useState(false);
+  const canRevealKey = Boolean(plaintextKey);
+  const shouldShowKeyRow = canRevealKey || !hideIfUnknown;
+  const displayedKey = isKeyVisible && plaintextKey ? plaintextKey : FALLBACK_MASKED_KEY;
 
   const handleToggleVisibility = () => {
+    if (!plaintextKey) {
+      return;
+    }
+
     setIsKeyVisible((current) => !current);
   };
 
   const handleCopyKey = async () => {
-    const copied = await copyToClipboard(apiKey);
+    if (!plaintextKey) {
+      return;
+    }
+
+    const copied = await copyToClipboard(plaintextKey);
     onNotify(copied ? 'Ключ скопирован' : 'Не удалось скопировать ключ');
   };
 
@@ -43,9 +55,26 @@ export const AccountApiKeySection = ({
   };
 
   const handleReissueKey = () => {
-    setReissuedKey(createPlaceholderApiKey());
-    setIsKeyVisible(true);
-    onNotify('Новый ключ показан один раз. Сохранение на сервере — позже.');
+    setIsReissueModalOpen(false);
+    void (async () => {
+      setIsReissuing(true);
+
+      try {
+        const issued = await reissueApiKeyRequest();
+        rememberIssuedApiKey(issued.api_key);
+        setIsKeyVisible(true);
+        onNotify('Ключ обновлён. Сохраните его.');
+      } catch (error) {
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          onNotify(error.userMessage);
+          return;
+        }
+
+        onNotify('Не удалось перевыпустить ключ.');
+      } finally {
+        setIsReissuing(false);
+      }
+    })();
   };
 
   return (
@@ -53,25 +82,34 @@ export const AccountApiKeySection = ({
       <h2 id="api-key-title" className={styles.sectionTitle}>
         API-ключ
       </h2>
-      <p className={styles.meta}>
-        Ключ:{' '}
-        <code className={styles.keyValue} translate="no">
-          {displayedKey}
-        </code>
-      </p>
+      {shouldShowKeyRow && (
+        <div className={styles.keyRow}>
+          <p className={styles.keyLabel} id="api-key-value-label">
+            Ключ
+          </p>
+          <code className={styles.keyValue} translate="no" aria-labelledby="api-key-value-label">
+            {displayedKey}
+          </code>
+        </div>
+      )}
       <div className={styles.actions}>
-        <Button
-          variant="secondary"
-          aria-pressed={isKeyVisible}
-          aria-label={isKeyVisible ? 'Скрыть API-ключ' : 'Показать API-ключ'}
-          onClick={handleToggleVisibility}
-        >
-          {isKeyVisible ? 'Скрыть' : 'Показать'}
-        </Button>
-        <Button variant="secondary" onClick={() => void handleCopyKey()}>
-          Скопировать
-        </Button>
-        <Button variant="danger" onClick={handleOpenReissueModal}>
+        {canRevealKey && (
+          <>
+            <Button
+              variant="secondary"
+              className={styles.toggle}
+              aria-pressed={isKeyVisible}
+              aria-label={isKeyVisible ? 'Скрыть API-ключ' : 'Показать API-ключ'}
+              onClick={handleToggleVisibility}
+            >
+              {isKeyVisible ? 'Скрыть' : 'Показать'}
+            </Button>
+            <Button variant="secondary" onClick={() => void handleCopyKey()}>
+              Скопировать
+            </Button>
+          </>
+        )}
+        <Button variant="danger" onClick={handleOpenReissueModal} disabled={isReissuing}>
           Перевыпустить
         </Button>
       </div>
@@ -85,7 +123,7 @@ export const AccountApiKeySection = ({
         danger
         onConfirm={handleReissueKey}
       >
-        Старый ключ перестанет работать сразу. Новый ключ будет показан один раз.
+        Старый ключ перестанет работать сразу. Новый ключ можно смотреть и скрывать в любой момент.
       </Modal>
     </section>
   );

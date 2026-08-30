@@ -42,6 +42,18 @@
   text-align: start;
 }
 
+.shareLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-line);
+}
+
 @media (max-width: 640px) {
   .action {
     width: 100%;

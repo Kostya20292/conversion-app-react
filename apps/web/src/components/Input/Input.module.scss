@@ -12,6 +12,11 @@
   color: var(--color-on-surface);
 }
 
+.control {
+  position: relative;
+  width: 100%;
+}
+
 .input {
   width: 100%;
   height: var(--control-height);
@@ -23,6 +28,42 @@
   font-size: var(--text-body-md-size);
   line-height: var(--text-body-md-line);
   transition: border-color 0.15s ease;
+}
+
+.inputWithReveal {
+  padding-inline-end: var(--control-height);
+}
+
+.reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-on-surface-muted);
+  cursor: pointer;
+}
+
+.reveal:hover:not(:disabled) {
+  color: var(--color-on-surface);
+}
+
+.reveal:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
+}
+
+.reveal:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .input::placeholder {
