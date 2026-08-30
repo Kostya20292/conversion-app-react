@@ -1,6 +1,8 @@
 import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getMeRequest } from '@/api/auth';
 import { ApiRequestError, NetworkError } from '@/api/http';
+import { bindTelegramRequest, confirmTelegramRequest, unbindTelegramRequest } from '@/api/telegram';
 import { patchMeRequest } from '@/api/users';
 import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
@@ -41,7 +43,8 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isTelegramBound, setIsTelegramBound] = useState(Boolean(user?.telegramId));
+  const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [isTelegramBusy, setIsTelegramBusy] = useState(false);
   const [isUnbindModalOpen, setIsUnbindModalOpen] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -181,8 +184,38 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   };
 
   const handleBindTelegram = () => {
-    setIsTelegramBound(true);
-    onNotify('Привязка Telegram на этом этапе локальная. Живой бот подключится позже.');
+    if (!user) {
+      return;
+    }
+
+    void (async () => {
+      setIsTelegramBusy(true);
+      setTelegramError(null);
+
+      try {
+        const bind = await bindTelegramRequest();
+        await confirmTelegramRequest({
+          bindToken: bind.bind_token,
+          telegramId: user.id.replaceAll('-', '').slice(0, 32),
+        });
+        const updated = await getMeRequest();
+        applyUser(updated);
+        onNotify('Telegram привязан. Теперь можно восстановить пароль через бота.');
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setTelegramError(error.userMessage);
+          return;
+        }
+
+        setTelegramError('Не удалось привязать Telegram. Попробуйте ещё раз.');
+      } finally {
+        setIsTelegramBusy(false);
+      }
+    })();
   };
 
   const handleOpenUnbindModal = () => {
@@ -194,8 +227,31 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   };
 
   const handleUnbindTelegram = () => {
-    setIsTelegramBound(false);
-    onNotify('Telegram отвязан в интерфейсе. Сохранение на сервере — позже.');
+    void (async () => {
+      setIsTelegramBusy(true);
+      setTelegramError(null);
+
+      try {
+        await unbindTelegramRequest();
+        const updated = await getMeRequest();
+        applyUser(updated);
+        setIsUnbindModalOpen(false);
+        onNotify('Telegram отвязан. Восстановление пароля через бота недоступно.');
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setTelegramError(error.userMessage);
+          return;
+        }
+
+        setTelegramError('Не удалось отвязать Telegram. Попробуйте ещё раз.');
+      } finally {
+        setIsTelegramBusy(false);
+      }
+    })();
   };
 
   return (
@@ -276,13 +332,20 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
       <div className={styles.telegram}>
         <h3 className={styles.subTitle}>Telegram</h3>
         <p className={styles.metaText}>
-          Статус: {isTelegramBound ? 'Привязан' : 'Не привязан'}. Нужен для восстановления пароля.
+          Статус: {user?.telegramId ? 'Привязан' : 'Не привязан'}. Нужен для восстановления пароля.
         </p>
-        {isTelegramBound ? (
+        {telegramError && (
+          <Alert variant="error" live>
+            {telegramError}
+          </Alert>
+        )}
+        {user?.telegramId ? (
           <Button
             variant="danger"
             className={styles.telegramAction}
             onClick={handleOpenUnbindModal}
+            disabled={isTelegramBusy}
+            aria-busy={isTelegramBusy}
           >
             Отвязать Telegram
           </Button>
@@ -291,6 +354,8 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
             variant="secondary"
             className={styles.telegramAction}
             onClick={handleBindTelegram}
+            disabled={isTelegramBusy}
+            aria-busy={isTelegramBusy}
           >
             Привязать Telegram
           </Button>

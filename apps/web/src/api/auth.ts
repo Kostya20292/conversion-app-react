@@ -86,3 +86,28 @@ export const logoutRequest = async (options?: Pick<ApiFetchOptions, 'signal'>): 
     signal: options?.signal,
   });
 };
+
+export const forgotPasswordRequest = async (
+  email: string,
+  options?: Pick<ApiFetchOptions, 'signal'>,
+): Promise<void> => {
+  await apiFetch<void>('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+    notify: { sessionExpired: false },
+    signal: options?.signal,
+  });
+};
+
+export const resetPasswordRequest = async (
+  input: { code: string; password: string },
+  options?: Pick<ApiFetchOptions, 'signal'>,
+): Promise<void> => {
+  await apiFetch<void>('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ code: input.code, new_password: input.password }),
+    errorContext: 'reset',
+    notify: { sessionExpired: false },
+    signal: options?.signal,
+  });
+};

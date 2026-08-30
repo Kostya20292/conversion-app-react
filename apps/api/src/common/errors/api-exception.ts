@@ -16,14 +16,18 @@ export class ApiException extends HttpException {
   readonly apiErrorCode: ApiErrorCode;
   readonly clientMessage: string;
 
+  readonly retryAfterSeconds?: number;
+
   constructor(
     code: ApiErrorCode,
     message: string = DEFAULT_MESSAGE_BY_ERROR_CODE[code],
     cause?: unknown,
+    retryAfterSeconds?: number,
   ) {
     const body: ApiErrorBody = { error: { code, message } };
     super(body, HTTP_STATUS_BY_ERROR_CODE[code], cause === undefined ? undefined : { cause });
     this.apiErrorCode = code;
     this.clientMessage = message;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }

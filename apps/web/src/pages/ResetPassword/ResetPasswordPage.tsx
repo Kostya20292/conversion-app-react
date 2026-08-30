@@ -1,5 +1,7 @@
 import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { resetPasswordRequest } from '@/api/auth';
+import { ApiRequestError, NetworkError } from '@/api/http';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
@@ -20,12 +22,14 @@ const RESET_FIELD_IDS = {
 } as const;
 
 export const ResetPasswordPage = () => {
+  const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [fieldErrors, setFieldErrors] = useState<ResetPasswordFormErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitAttempted, setIsSubmitAttempted] = useState(false);
-  const [isClientAccepted, setIsClientAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const codeRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const passwordConfirmRef = useRef<HTMLInputElement>(null);
@@ -63,21 +67,21 @@ export const ResetPasswordPage = () => {
   const handleCodeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setCode(value);
-    setIsClientAccepted(false);
+    setFormError(null);
     syncFieldErrors(['code'], { ...getFormValues(), code: value });
   };
 
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setPassword(value);
-    setIsClientAccepted(false);
+    setFormError(null);
     syncFieldErrors(['password', 'passwordConfirm'], { ...getFormValues(), password: value });
   };
 
   const handlePasswordConfirmChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setPasswordConfirm(value);
-    setIsClientAccepted(false);
+    setFormError(null);
     syncFieldErrors(['passwordConfirm'], { ...getFormValues(), passwordConfirm: value });
   };
 
@@ -90,12 +94,33 @@ export const ResetPasswordPage = () => {
 
     const firstErrorField = getFirstErrorField(nextErrors, RESET_PASSWORD_FIELD_ORDER);
     if (firstErrorField) {
-      setIsClientAccepted(false);
+      setFormError(null);
       fieldRefs[firstErrorField].current?.focus();
       return;
     }
 
-    setIsClientAccepted(true);
+    void (async () => {
+      setIsSubmitting(true);
+      setFormError(null);
+
+      try {
+        await resetPasswordRequest({ code: code.trim(), password });
+        navigate('/login', { replace: true });
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.code === 'internal_error') {
+          return;
+        }
+
+        if (error instanceof ApiRequestError || error instanceof NetworkError) {
+          setFormError(error.userMessage);
+          return;
+        }
+
+        setFormError('Не удалось сохранить пароль. Попробуйте ещё раз.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    })();
   };
 
   return (
@@ -145,12 +170,12 @@ export const ResetPasswordPage = () => {
             onChange={handlePasswordConfirmChange}
             required
           />
-          {isClientAccepted && (
-            <Alert variant="info" live>
-              Проверка кода и смена пароля появятся на этапе восстановления.
+          {formError && (
+            <Alert variant="error" live>
+              {formError}
             </Alert>
           )}
-          <Button type="submit" fullWidth>
+          <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
             Сохранить пароль
           </Button>
         </form>

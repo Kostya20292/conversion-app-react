@@ -12,8 +12,8 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–10 и публичное `/api/v1` (**F**) готовы. Дальше — Telegram mock / recovery (§11)
-или rate limit + cron (§13). Фронт закрыл A2 (включая `/api-docs`), **B**, **C**, **D** и **E**.
+**Прогресс:** §1–11 готовы (этап **G**: Telegram mock + reset). Дальше — rate limit + cron (§13,
+этап **H**) и добор тестов (§15, этап **I**). Фронт закрыл A2, **B–E** и **F** (recovery).
 
 ---
 
@@ -31,10 +31,10 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: Telegram mock / recovery
+## 0.1. Текущий фокус: rate limit и TTL-cron
 
-Auth cookie, jobs, worker, signed download, **shares**, **StoredFile** и **`/api/v1`** закрыты.
-Дальше — §11 (Telegram mock + reset) или §13 (rate limit + cron). Фронт **E** и `/api-docs` закрыты.
+Auth cookie, jobs, worker, signed download, shares, StoredFile, `/api/v1` и **recovery (Telegram
+mock)** закрыты. Дальше — §13 (rate limit + cron). Фронт **F** закрыт.
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -48,6 +48,7 @@ Auth cookie, jobs, worker, signed download, **shares**, **StoredFile** и **`/ap
 | 8   | Worker + signed download (гость)                                          | §8          | ✅     |
 | 9   | Shares: create / public GET+download / list / revoke → 410                | §10         | ✅     |
 | 10  | StoredFile: save_conversions, GET/DELETE files, signed download           | §9          | ✅     |
+| 11  | Telegram mock: bind/unbind, forgot/reset                                  | §11         | ✅     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -296,12 +297,12 @@ LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), 
 
 | Шаг  | Действие                                                                                | Критерий готовности                                  | Статус |
 | ---- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------ |
-| 11.1 | `POST /api/users/me/telegram/bind` → bind token; mock-confirm в dev (без внешнего бота) | В профиле статус «привязан», есть `telegram_id`      | ⬜     |
-| 11.2 | Unbind с предупреждением (логика сервера: просто отвязать)                              | Recovery после unbind недоступен                     | ⬜     |
-| 11.3 | `POST /api/auth/forgot-password` — **одинаковый** нейтральный ответ всегда              | Нет enumeration, есть аккаунт или нет                | ⬜     |
-| 11.4 | Если Telegram привязан — сохранить код (hash), TTL **15 мин**; cooldown **60 с**        | Повтор раньше 60 с — ошибка cooldown                 | ⬜     |
-| 11.5 | Mock «доставляет» код: лог + dev-only выдача **запрещена** в prod                       | В prod код не светить в HTTP ответа forgot           | ⬜     |
-| 11.6 | `POST /api/auth/reset-password`: код + новый пароль                                     | Успех → можно login; неверный/протухший код — ошибка | ⬜     |
+| 11.1 | `POST /api/users/me/telegram/bind` → bind token; mock-confirm в dev (без внешнего бота) | В профиле статус «привязан», есть `telegram_id`      | ✅     |
+| 11.2 | Unbind с предупреждением (логика сервера: просто отвязать)                              | Recovery после unbind недоступен                     | ✅     |
+| 11.3 | `POST /api/auth/forgot-password` — **одинаковый** нейтральный ответ всегда              | Нет enumeration, есть аккаунт или нет                | ✅     |
+| 11.4 | Если Telegram привязан — сохранить код (hash), TTL **15 мин**; cooldown **60 с**        | Повтор раньше 60 с — ошибка cooldown                 | ✅     |
+| 11.5 | Mock «доставляет» код: лог + dev-only выдача **запрещена** в prod                       | В prod код не светить в HTTP ответа forgot           | ✅     |
+| 11.6 | `POST /api/auth/reset-password`: код + новый пароль                                     | Успех → можно login; неверный/протухший код — ошибка | ✅     |
 
 Нейтральный текст forgot согласован с ТЗ §4.4 / §6.2 (фронт показывает RU).
 
@@ -341,6 +342,8 @@ SPA-контракт (cookie), который ждёт
 | POST   | `/api/auth/forgot-password` | —                |
 | POST   | `/api/auth/reset-password`  | —                |
 | PATCH  | `/api/users/me`             | cookie           |
+| POST   | `/api/users/me/telegram/bind` | cookie         |
+| POST   | `/api/users/me/telegram/unbind` | cookie       |
 | GET    | `/api/api-keys`             | cookie           |
 | POST   | `/api/api-keys/reissue`     | cookie           |
 | POST   | `/api/jobs`                 | cookie \| гость  |
@@ -439,14 +442,14 @@ register/login, guest POST job + GET, API 401 без ключа, guest download 
 | **D** | §10 shares                           | Фронт D                 | ✅     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | ✅     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | ✅     |
-| **G** | §11 Telegram mock + reset            | Фронт F                 | ⬜     |
+| **G** | §11 Telegram mock + reset            | Фронт F                 | ✅     |
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
 
 Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **D:** shares (UI + v1 +
 public). Этап **E:** StoredFile после `save_conversions`, `GET/DELETE /api/files` и v1, signed
 download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, shares v1 и **files v1**
-живые; фронт `/api-docs` закрыт по этому канону.
+живые; фронт `/api-docs` закрыт по этому канону. Этап **G:** Telegram mock bind/unbind, forgot/reset.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -479,7 +482,7 @@ download. Этап **F:** `POST/GET /api/v1/jobs`, download, `GET /api/v1/me`, s
 - [x] Share: создать (гость и user), public GET, revoke → 410
 - [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
 - [ ] Rate limits §7.6; cron TTL исходников/результатов/shares
-- [ ] Telegram — mock; живой бот не требуется
+- [x] Telegram — mock; живой бот не требуется
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
 - [ ] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410 есть
 - [x] Нет раздачи `storage/` статикой; нет секретов в репо

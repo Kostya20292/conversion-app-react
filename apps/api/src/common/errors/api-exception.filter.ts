@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { ApiException } from './api-exception';
 import { resolveApiError } from './resolve-api-error';
 
 @Catch()
@@ -18,6 +19,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     if (!(exception instanceof HttpException) || status >= 500) {
       this.logger.error(exception);
+    }
+
+    if (exception instanceof ApiException && exception.retryAfterSeconds !== undefined) {
+      response.setHeader('Retry-After', String(exception.retryAfterSeconds));
     }
 
     response.status(status).json({ error });

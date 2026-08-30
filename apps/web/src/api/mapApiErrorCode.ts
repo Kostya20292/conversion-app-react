@@ -104,6 +104,18 @@ export const mapApiErrorCode = ({
     return 'Ссылка больше недоступна';
   }
 
+  if (code === 'gone' && context === 'reset') {
+    return 'Код устарел, запросите новый';
+  }
+
+  if (code === 'invalid_request' && context === 'reset') {
+    if (message === 'Invalid reset code') {
+      return 'Неверный код';
+    }
+
+    return 'Пароль: не меньше 8 символов, буква и цифра';
+  }
+
   return MESSAGE_BY_CODE[code];
 };
 

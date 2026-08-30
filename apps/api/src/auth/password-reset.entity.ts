@@ -26,6 +26,9 @@ export class PasswordReset {
   @Column({ type: 'text', select: false })
   codeHash!: string;
 
+  @Column({ type: 'varchar', length: 64, unique: true })
+  lookupHash!: string;
+
   @Column({ type: 'timestamptz' })
   expiresAt!: Date;
 

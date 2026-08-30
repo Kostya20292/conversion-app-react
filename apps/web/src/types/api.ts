@@ -16,7 +16,14 @@ export type ApiError = {
   message: string;
 };
 
-export type ApiErrorContext = 'login' | 'register' | 'session' | 'download' | 'share' | 'account';
+export type ApiErrorContext =
+  | 'login'
+  | 'register'
+  | 'session'
+  | 'download'
+  | 'share'
+  | 'account'
+  | 'reset';
 
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
