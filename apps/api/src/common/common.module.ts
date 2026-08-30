@@ -15,6 +15,7 @@ import { CookieAuthGuard } from './guards/cookie-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OptionalCookieAuthGuard } from './guards/optional-cookie-auth.guard';
 import { createValidationPipe } from './pipes/create-validation-pipe';
+import { SignedDownloadTokenService } from './signed-download-token';
 
 @Global()
 @Module({
@@ -39,6 +40,7 @@ import { createValidationPipe } from './pipes/create-validation-pipe';
     CookieAuthGuard,
     OptionalCookieAuthGuard,
     ApiKeyGuard,
+    SignedDownloadTokenService,
     { provide: API_KEY_AUTHENTICATOR, useClass: DbApiKeyAuthenticator },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     { provide: APP_PIPE, useFactory: createValidationPipe },
@@ -52,6 +54,7 @@ import { createValidationPipe } from './pipes/create-validation-pipe';
     OptionalCookieAuthGuard,
     ApiKeyGuard,
     API_KEY_AUTHENTICATOR,
+    SignedDownloadTokenService,
   ],
 })
 export class CommonModule {}

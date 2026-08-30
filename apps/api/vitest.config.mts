@@ -11,6 +11,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
     passWithNoTests: true,
     restoreMocks: true,
+    fileParallelism: false,
   },
   plugins: [
     swc.vite({

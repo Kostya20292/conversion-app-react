@@ -2,10 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -13,7 +16,7 @@ import {
 import { OptionalCookieAuthGuard } from '@/common/guards/optional-cookie-auth.guard';
 import { OptionalAuthUser } from '@/common/optional-auth-user.decorator';
 import type { User } from '@/users/user.entity';
-import type { JobCreatedResponse, JobStatusResponse } from './job-response';
+import { toStreamableFile, type JobCreatedResponse, type JobStatusResponse } from './job-response';
 import { JobFileInterceptor, readTargetFormat, toUploadFiles } from './job-upload';
 import { JobsService } from './jobs.service';
 
@@ -36,6 +39,17 @@ export class JobsController {
       userId: user?.id ?? null,
       sourceOfRequest: 'ui',
     });
+  }
+
+  @Get(':id/download')
+  @Header('Cache-Control', 'private, no-store')
+  async download(
+    @Param('id') id: string,
+    @Query('token') token: string | undefined,
+    @OptionalAuthUser() user: User | null,
+  ): Promise<StreamableFile> {
+    const file = await this.jobsService.downloadForUi(id, user?.id ?? null, token);
+    return toStreamableFile(file);
   }
 
   @Get(':id')

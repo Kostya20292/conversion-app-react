@@ -2,18 +2,23 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { MIME_BY_FORMAT } from '@/common/domain/file-mime';
 import type { RequestSource } from '@/common/domain/request-source';
 import { ApiException } from '@/common/errors/api-exception';
+import { SignedDownloadTokenService } from '@/common/signed-download-token';
 import { uploadStorageKey } from '@/file-store/storage-key';
 import { StorageService } from '@/file-store/storage.service';
 import { type UploadFile, validateUpload } from '@/file-store/validate-upload';
 import { ConversionJob } from './conversion-job.entity';
 import {
   type JobCreatedResponse,
+  type JobDownload,
   type JobStatusResponse,
   toJobCreatedResponse,
   toJobStatusResponse,
 } from './job-response';
+
+export const RESULT_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type CreateJobInput = {
   files: readonly UploadFile[];
@@ -27,6 +32,7 @@ export class JobsService {
   constructor(
     @InjectRepository(ConversionJob) private readonly jobs: Repository<ConversionJob>,
     private readonly storage: StorageService,
+    private readonly downloadTokens: SignedDownloadTokenService,
   ) {}
 
   async create(input: CreateJobInput): Promise<JobCreatedResponse> {
@@ -69,6 +75,92 @@ export class JobsService {
   }
 
   async getForUi(id: string, viewerUserId: string | null): Promise<JobStatusResponse> {
+    const job = await this.requireUiJob(id, viewerUserId);
+    return this.toStatus(job, 'ui');
+  }
+
+  async getForApi(id: string, ownerUserId: string): Promise<JobStatusResponse> {
+    const job = await this.requireApiJob(id, ownerUserId);
+    return this.toStatus(job, 'api');
+  }
+
+  async downloadForUi(
+    id: string,
+    viewerUserId: string | null,
+    token: string | undefined,
+  ): Promise<JobDownload> {
+    const job = await this.requireUiJob(id, viewerUserId);
+    if (job.status === 'failed') {
+      throw new ApiException('conversion_failed');
+    }
+
+    this.assertUiDownloadAccess(job, viewerUserId, token);
+    return this.readResult(job);
+  }
+
+  async downloadForApi(id: string, ownerUserId: string): Promise<JobDownload> {
+    const job = await this.requireApiJob(id, ownerUserId);
+    return this.readResult(job);
+  }
+
+  private toStatus(job: ConversionJob, channel: 'ui' | 'api'): JobStatusResponse {
+    if (job.status !== 'completed') {
+      return toJobStatusResponse(job);
+    }
+
+    if (channel === 'ui') {
+      const issued = this.downloadTokens.issue(job.id);
+      return toJobStatusResponse(job, {
+        url: `/api/jobs/${job.id}/download?token=${encodeURIComponent(issued.token)}`,
+        expiresAt: issued.expiresAt,
+      });
+    }
+
+    const finishedAt = job.finishedAt ?? new Date();
+    return toJobStatusResponse(job, {
+      url: `/api/v1/jobs/${job.id}/download`,
+      expiresAt: new Date(finishedAt.getTime() + RESULT_TTL_MS),
+    });
+  }
+
+  private assertUiDownloadAccess(
+    job: ConversionJob,
+    viewerUserId: string | null,
+    token: string | undefined,
+  ): void {
+    if (job.userId !== null && job.userId === viewerUserId) {
+      return;
+    }
+
+    if (token === undefined || token.length === 0) {
+      throw new ApiException('not_found');
+    }
+
+    this.downloadTokens.verify(token, job.id);
+  }
+
+  private async readResult(job: ConversionJob): Promise<JobDownload> {
+    if (job.status === 'failed') {
+      throw new ApiException('conversion_failed');
+    }
+
+    if (job.status !== 'completed' || job.resultStorageKey === null) {
+      throw new ApiException('not_found');
+    }
+
+    try {
+      const bytes = await this.storage.read(job.resultStorageKey);
+      return {
+        bytes,
+        mimeType: MIME_BY_FORMAT[job.targetFormat],
+        filename: `result.${job.targetFormat}`,
+      };
+    } catch {
+      throw new ApiException('gone');
+    }
+  }
+
+  private async requireUiJob(id: string, viewerUserId: string | null): Promise<ConversionJob> {
     const job = await this.jobs.findOneBy({ id });
     if (!job) {
       throw new ApiException('not_found');
@@ -78,15 +170,15 @@ export class JobsService {
       throw new ApiException('not_found');
     }
 
-    return toJobStatusResponse(job);
+    return job;
   }
 
-  async getForApi(id: string, ownerUserId: string): Promise<JobStatusResponse> {
+  private async requireApiJob(id: string, ownerUserId: string): Promise<ConversionJob> {
     const job = await this.jobs.findOneBy({ id });
     if (!job || job.userId !== ownerUserId) {
       throw new ApiException('not_found');
     }
 
-    return toJobStatusResponse(job);
+    return job;
   }
-}
+};

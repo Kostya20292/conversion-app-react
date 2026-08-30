@@ -12,10 +12,10 @@
 Стек и границы v1 **фиксированы** — альтернативы не предлагать. HTTP, worker и cron TTL — **один
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
-**Прогресс:** §1–7 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи, storage, HTTP
-jobs). Дальше — §8 worker и download. Фронт закрыл этапы A2 и **B**
-([frontend-implementation-plan.md](./frontend-implementation-plan.md) §14). Этот план разблокирует
-фронтовые C–G.
+**Прогресс:** §1–8 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи, storage, HTTP
+jobs, движки, worker, signed download). Дальше — §9 StoredFile. Фронт закрыл этапы A2 и **B**;
+разблокирован фронтовый **C** ([frontend-implementation-plan.md](./frontend-implementation-plan.md)
+§14).
 
 ---
 
@@ -33,10 +33,11 @@ IP), не публичный `/api/v1`.
 
 ---
 
-## 0.1. Текущий фокус: гостевая конвертация
+## 0.1. Текущий фокус: сохранение в профиль
 
-Auth cookie, профиль/ключи и HTTP jobs закрыты. Дальше — worker + download (§8). Фронт B (сессия)
-уже живой. Моки HTTP **не** делаем (как на фронте).
+Auth cookie, профиль/ключи, HTTP jobs, worker и signed download закрыты. Дальше — §9
+(`save_conversions` / StoredFile). Фронт B (сессия) уже живой; фронт C (upload/poll/download) можно
+делать. Моки HTTP **не** делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |
@@ -47,7 +48,7 @@ Auth cookie, профиль/ключи и HTTP jobs закрыты. Дальше
 | 5   | Auth cookie: register / login / logout / me                               | §4          | ✅     |
 | 6   | Users и API-ключи: PATCH /me, ключ при register, reissue                  | §5          | ✅     |
 | 7   | UI + v1 jobs: upload → queued, GET статуса, владение                      | §7          | ✅     |
-| 8   | Worker + signed download (гость)                                          | §8          | ⬜     |
+| 8   | Worker + signed download (гость)                                          | §8          | ✅     |
 
 **Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
 горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
@@ -215,7 +216,7 @@ PNG→JPG: прозрачность на белый фон (зафиксиров
 | --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------ |
 | 7.1 | `POST …/jobs` multipart: `file` + `target_format`                                                  | 202 `{ id, status: "queued" }`; файл в `uploads/` | ✅     |
 | 7.2 | `GET …/jobs/:id` — владелец (cookie / ключ) или 404                                                | Чужой job → `not_found` (без утечки)              | ✅     |
-| 7.3 | Поля completed: `source_format`, `target_format`, `download_url`, `expires_at`, `saved_to_profile` | Как пример ТЗ §7.2                                | 🟡     |
+| 7.3 | Поля completed: `source_format`, `target_format`, `download_url`, `expires_at`, `saved_to_profile` | Как пример ТЗ §7.2                                | ✅     |
 | 7.4 | `source_of_request`: `ui` на `/api/jobs`, `api` на `/api/v1/jobs`                                  | В StoredFile потом видно источник                 | ✅     |
 | 7.5 | Гость: `user_id = null`; user: из JWT; API: из ключа                                               | Guest job не попадает в ЛК                        | ✅     |
 
@@ -223,8 +224,8 @@ PNG→JPG: прозрачность на белый фон (зафиксиров
 
 Polling интервал **2 с** — ответственность клиента, не сервера.
 
-**Сейчас:** POST/GET на `/api/jobs` и `/api/v1/jobs`; job остаётся `queued`. GET уже отдаёт
-`source_format` / `target_format`. `download_url`, `expires_at`, `saved_to_profile` — после §8.
+**Сейчас:** POST/GET на `/api/jobs` и `/api/v1/jobs`; worker доводит job до `completed` / `failed`.
+GET completed отдаёт `download_url`, `expires_at`, `saved_to_profile: false` (профиль — §9).
 
 ---
 
@@ -234,16 +235,16 @@ Polling интервал **2 с** — ответственность клиен�
 
 | Шаг  | Действие                                                                             | Критерий готовности                    | Статус |
 | ---- | ------------------------------------------------------------------------------------ | -------------------------------------- | ------ |
-| 8.1  | `conversion`: Sharp (JPG↔PNG), LibreOffice headless (DOCX↔PDF) из PATH               | Юнит на фикстуре JPG→PNG без HTTP      | ⬜     |
-| 8.2  | Worker в том же процессе: claim `queued` → `processing` (атомарно, `SKIP LOCKED`)    | Два тика не берут один job             | ⬜     |
-| 8.3  | Concurrency: **1** LibreOffice, до **2** Sharp одновременно                          | Очередь растёт, процесс не съедает RAM | ⬜     |
-| 8.4  | Таймаут движка **60 с** → `failed` + `conversion_timeout`                            | Job не висит в `processing`            | ⬜     |
-| 8.5  | Успех: результат в `results/<job_id>/`, исходник из `uploads/` удалить               | TTL исходника соблюдён на happy-path   | ⬜     |
-| 8.6  | Ошибка движка → `failed` + `conversion_failed`                                       | GET отдаёт код, файл результата нет    | ⬜     |
-| 8.7  | Signed download token TTL **15 мин** (`common/`)                                     | Просроченный token → `410 gone`        | ⬜     |
-| 8.8  | `GET /api/jobs/:id/download` — cookie владельца **или** signed query                 | Гость скачивает по URL из completed    | ⬜     |
-| 8.9  | `GET /api/v1/jobs/:id/download` — только ключ владельца (без публичного вечного URL) | Чужой ключ → 404                       | ⬜     |
-| 8.10 | Нет статической раздачи `storage/`                                                   | Прямой GET файла с диска невозможен    | ⬜     |
+| 8.1  | `conversion`: Sharp (JPG↔PNG), LibreOffice headless (DOCX↔PDF) из PATH               | Юнит на фикстуре JPG→PNG без HTTP      | ✅     |
+| 8.2  | Worker в том же процессе: claim `queued` → `processing` (атомарно, `SKIP LOCKED`)    | Два тика не берут один job             | ✅     |
+| 8.3  | Concurrency: **1** LibreOffice, до **2** Sharp одновременно                          | Очередь растёт, процесс не съедает RAM | ✅     |
+| 8.4  | Таймаут движка **60 с** → `failed` + `conversion_timeout`                            | Job не висит в `processing`            | ✅     |
+| 8.5  | Успех: результат в `results/<job_id>/`, исходник из `uploads/` удалить               | TTL исходника соблюдён на happy-path   | ✅     |
+| 8.6  | Ошибка движка → `failed` + `conversion_failed`                                       | GET отдаёт код, файл результата нет    | ✅     |
+| 8.7  | Signed download token TTL **15 мин** (`common/`)                                     | Просроченный token → `410 gone`        | ✅     |
+| 8.8  | `GET /api/jobs/:id/download` — cookie владельца **или** signed query                 | Гость скачивает по URL из completed    | ✅     |
+| 8.9  | `GET /api/v1/jobs/:id/download` — только ключ владельца (без публичного вечного URL) | Чужой ключ → 404                       | ✅     |
+| 8.10 | Нет статической раздачи `storage/`                                                   | Прямой GET файла с диска невозможен    | ✅     |
 
 LibreOffice отсутствует в PATH: job `failed` (`conversion_failed`), в логах — причина. Не
 маскировать под timeout.
@@ -413,10 +414,10 @@ SPA-контракт (cookie), который ждёт
 | HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410         | 🟡      |
 | E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК (когда фронт на этапе G) | ⏸ фронт |
 
-Unit: пароль, пары, magic bytes, 10 МБ, hash ключа — есть; signed token TTL — с §8. HTTP:
-register/login, guest POST job + GET, API 401 без ключа — есть; share 410 — с §10. LibreOffice:
-HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла кейса — гонять локально, в
-среде без бинаря не ослаблять assert.
+Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:
+register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL — есть; share
+410 — с §10. LibreOffice: HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе не skip смысла
+кейса — гонять локально, в среде без бинаря не ослаблять assert.
 
 ---
 
@@ -429,7 +430,7 @@ HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе н
 | ----- | ------------------------------------ | ----------------------- | ------ |
 | **A** | §1–3 фундамент, ошибки, сущности     | —                       | ✅     |
 | **B** | §4 auth cookie                       | Фронт B (сессия, guard) | ✅     |
-| **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | 🟡     |
+| **C** | §6–8 storage, jobs, worker, download | Фронт C (гость convert) | ✅     |
 | **D** | §10 shares                           | Фронт D                 | ⬜     |
 | **E** | §5 + §9 ключи, профиль, files        | Фронт E (живой ЛК)      | 🟡     |
 | **F** | §7 `/api/v1` поверх тех же сервисов  | UC-02 curl, `/api-docs` | 🟡     |
@@ -437,8 +438,8 @@ HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе н
 | **H** | §13 rate limit + cron                | Фронт G (429, TTL)      | ⬜     |
 | **I** | §15 тесты                            | Регрессия               | ⬜     |
 
-Этап **C:** storage + HTTP jobs готовы; worker/download — §8. Этап **F:** `POST/GET /api/v1/jobs` и
-`GET /api/v1/me` уже живые; files/shares v1 — позже.
+Этап **C:** storage, HTTP jobs, worker и signed download закрыты. Этап **F:**
+`POST/GET /api/v1/jobs`, download и `GET /api/v1/me` уже живые; files/shares v1 — позже.
 
 Легенда: ✅ готово · 🟡 частично · ⬜ не начато · ⏸ ждём другую сторону.
 
@@ -463,20 +464,18 @@ HTTP-кейс DOCX→PDF гонять, если `soffice` в PATH, иначе н
 ## 18. Definition of Done (бэкенд v1)
 
 - [x] `apps/api` стартует, TypeORM видит PostgreSQL, `storage/` не в git
-- [ ] Гость: `POST /api/jobs` → poll → signed download (UC-01) — POST/poll queued есть; download —
-      §8
+- [x] Гость: `POST /api/jobs` → poll → signed download (UC-01)
 - [x] Auth: register (автологин, ключ один раз), login («запомнить меня»), logout, `GET /me`
 - [x] Пароли argon2; login без enumeration; правила пароля на сервере
 - [x] `/api/v1/*` только с ключом; hash+prefix в БД — jobs и `GET /me`; files/shares v1 — позже
 - [ ] `save_conversions` default false; вкл → StoredFile; выкл не трогает старые
 - [ ] Share: создать (гость и user), public GET, revoke → 410
-- [ ] MIME по magic bytes; 1 файл; 10 МБ — ✅; 60 с timeout — §8
+- [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
 - [ ] Rate limits §7.6; cron TTL исходников/результатов/shares
 - [ ] Telegram — mock; живой бот не требуется
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
-- [ ] Unit + HTTP-тесты минимума §15 зелёные — часть есть (auth, jobs queued); share/signed token —
-      позже
-- [ ] Нет раздачи `storage/` статикой; нет секретов в репо
+- [ ] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download есть; share 410 — с §10
+- [x] Нет раздачи `storage/` статикой; нет секретов в репо
 
 ---
 

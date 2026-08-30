@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -13,7 +15,7 @@ import {
 import type { AuthenticatedApiKey } from '@/common/api-key.authenticator';
 import { CurrentApiKey } from '@/common/current-api-key.decorator';
 import { ApiKeyGuard } from '@/common/guards/api-key.guard';
-import type { JobCreatedResponse, JobStatusResponse } from './job-response';
+import { toStreamableFile, type JobCreatedResponse, type JobStatusResponse } from './job-response';
 import { JobFileInterceptor, readTargetFormat, toUploadFiles } from './job-upload';
 import { JobsService } from './jobs.service';
 
@@ -36,6 +38,16 @@ export class V1JobsController {
       userId: apiKey.userId,
       sourceOfRequest: 'api',
     });
+  }
+
+  @Get(':id/download')
+  @Header('Cache-Control', 'private, no-store')
+  async download(
+    @Param('id') id: string,
+    @CurrentApiKey() apiKey: AuthenticatedApiKey,
+  ): Promise<StreamableFile> {
+    const file = await this.jobsService.downloadForApi(id, apiKey.userId);
+    return toStreamableFile(file);
   }
 
   @Get(':id')
