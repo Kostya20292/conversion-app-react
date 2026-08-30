@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { NotFoundPage } from '@/pages/NotFound/NotFoundPage';
 import { renderWithRouter } from '@/test/renderWithRouter';
-import { NotFoundPage } from './NotFoundPage';
 
 describe('NotFoundPage', () => {
   it('сообщает, что страница не найдена, и ведёт на главную', () => {

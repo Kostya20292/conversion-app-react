@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
 import { useAuthStore } from '@/app/authStore';
 import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
@@ -114,7 +114,7 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
     syncFieldErrors(['newPasswordConfirm'], { ...getFormValues(), newPasswordConfirm: value });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitAttempted(true);
 

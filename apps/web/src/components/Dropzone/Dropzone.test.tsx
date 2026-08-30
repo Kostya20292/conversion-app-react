@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { Dropzone } from '@/components/Dropzone/Dropzone';
 import { createTestFile } from '@/test/createTestFile';
-import { Dropzone } from './Dropzone';
 
 describe('Dropzone', () => {
   it('объявляет зону загрузки и лимит одного файла до 10 МБ', () => {

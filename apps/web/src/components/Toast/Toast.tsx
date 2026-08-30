@@ -46,27 +46,27 @@ export const Toast = ({
     };
   }, [open, durationMs, onClose, message]);
 
-  if (!open) return null;
-
   const handleClose = () => {
     onClose();
   };
 
   return (
-    <div
-      ref={toastRef}
-      className={clsx(styles.toast, styles[variant])}
-      role={isError ? 'alert' : 'status'}
-    >
-      <p className={styles.message}>{message}</p>
-      <button
-        type="button"
-        className={styles.close}
-        onClick={handleClose}
-        aria-label="Закрыть уведомление"
+    open && (
+      <div
+        ref={toastRef}
+        className={clsx(styles.toast, styles[variant])}
+        role={isError ? 'alert' : 'status'}
       >
-        ×
-      </button>
-    </div>
+        <p className={styles.message}>{message}</p>
+        <button
+          type="button"
+          className={styles.close}
+          onClick={handleClose}
+          aria-label="Закрыть уведомление"
+        >
+          ×
+        </button>
+      </div>
+    )
   );
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateAccountProfileForm } from './validateAccountProfile';
+import { validateAccountProfileForm } from '@/features/account/validateAccountProfile';
 
 const validProfile = {
   displayName: 'Иван',

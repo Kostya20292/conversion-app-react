@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { LoginPage } from '@/pages/Login/LoginPage';
 import { renderWithRouter } from '@/test/renderWithRouter';
-import { LoginPage } from './LoginPage';
 
 describe('LoginPage', () => {
   it('показывает ошибки полей при пустой отправке', async () => {

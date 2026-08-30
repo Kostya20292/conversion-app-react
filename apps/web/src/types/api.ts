@@ -30,6 +30,7 @@ export type ConversionJob = {
   download_url?: string;
   expires_at?: string;
   saved_to_profile?: boolean;
+  error?: { code: ApiErrorCode };
 };
 
 export type AuthUser = {

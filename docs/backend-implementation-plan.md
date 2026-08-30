@@ -13,9 +13,8 @@
 процесс** Nest; без Redis, BullMQ, S3 и Docker Compose для PostgreSQL.
 
 **Прогресс:** §1–8 готовы (фундамент, ошибки, сущности, auth cookie, users/ключи, storage, HTTP
-jobs, движки, worker, signed download). Дальше — §9 StoredFile. Фронт закрыл этапы A2 и **B**;
-разблокирован фронтовый **C** ([frontend-implementation-plan.md](./frontend-implementation-plan.md)
-§14).
+jobs, движки, worker, signed download). Дальше — §9 StoredFile. Фронт закрыл этапы A2, **B** и **C**
+(гостевая конвертация на главной).
 
 ---
 
@@ -36,8 +35,8 @@ IP), не публичный `/api/v1`.
 ## 0.1. Текущий фокус: сохранение в профиль
 
 Auth cookie, профиль/ключи, HTTP jobs, worker и signed download закрыты. Дальше — §9
-(`save_conversions` / StoredFile). Фронт B (сессия) уже живой; фронт C (upload/poll/download) можно
-делать. Моки HTTP **не** делаем (как на фронте).
+(`save_conversions` / StoredFile). Фронт **C** (upload/poll/download) закрыт. Моки HTTP **не**
+делаем (как на фронте).
 
 | #   | Что делать сейчас                                                         | Где в плане | Статус |
 | --- | ------------------------------------------------------------------------- | ----------- | ------ |

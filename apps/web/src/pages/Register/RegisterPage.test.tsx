@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { RegisterPage } from '@/pages/Register/RegisterPage';
 import { renderWithRouter } from '@/test/renderWithRouter';
-import { RegisterPage } from './RegisterPage';
 
 describe('RegisterPage', () => {
   it('показывает правило пароля до ошибки', () => {

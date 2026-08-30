@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ApiRequestError, NetworkError } from '@/api/http';
 import { useAuthStore } from '@/app/authStore';
@@ -105,7 +105,7 @@ export const RegisterPage = () => {
     syncFieldErrors(['passwordConfirm'], { ...getFormValues(), passwordConfirm: value });
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitAttempted(true);
 
@@ -150,99 +150,99 @@ export const RegisterPage = () => {
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="container narrowPage">
-        <Spinner label="Проверяем сессию" />
-      </div>
-    );
-  }
-
-  if (status === 'authenticated') {
-    return <Navigate to="/account" replace />;
-  }
-
   return (
-    <div className="container narrowPage">
-      <div className={styles.card}>
-        <h1 className={styles.title}>Регистрация</h1>
-        <p className={styles.lead}>Создайте аккаунт, чтобы сохранять файлы и получить API-ключ.</p>
+    <>
+      {status === 'loading' && (
+        <div className="container narrowPage">
+          <Spinner label="Проверяем сессию" />
+        </div>
+      )}
+      {status === 'authenticated' && <Navigate to="/account" replace />}
+      {status === 'anonymous' && (
+        <div className="container narrowPage">
+          <div className={styles.card}>
+            <h1 className={styles.title}>Регистрация</h1>
+            <p className={styles.lead}>
+              Создайте аккаунт, чтобы сохранять файлы и получить API-ключ.
+            </p>
 
-        <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
-          <Input
-            id={REGISTER_FIELD_IDS.displayName}
-            ref={displayNameRef}
-            label="Имя"
-            name="name"
-            autoComplete="name"
-            value={displayName}
-            error={fieldErrors.displayName}
-            onChange={handleDisplayNameChange}
-            required
-          />
-          <Input
-            id={REGISTER_FIELD_IDS.email}
-            ref={emailRef}
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            error={fieldErrors.email}
-            onChange={handleEmailChange}
-            required
-          />
-          <Input
-            id={REGISTER_FIELD_IDS.password}
-            ref={passwordRef}
-            label="Пароль"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            hint={PASSWORD_HINT}
-            minLength={8}
-            value={password}
-            error={fieldErrors.password}
-            onChange={handlePasswordChange}
-            required
-          />
-          <Input
-            id={REGISTER_FIELD_IDS.passwordConfirm}
-            ref={passwordConfirmRef}
-            label="Подтверждение пароля"
-            name="passwordConfirm"
-            type="password"
-            autoComplete="new-password"
-            value={passwordConfirm}
-            error={fieldErrors.passwordConfirm}
-            onChange={handlePasswordConfirmChange}
-            required
-          />
-          <Alert variant="info">
-            Привязка Telegram для восстановления пароля будет доступна позже в личном кабинете.
-          </Alert>
-          {formError && (
-            <Alert variant="error" live>
-              {formError}
-              {isEmailTaken && (
-                <>
-                  {' '}
-                  <Link className={styles.errorLink} to="/login">
-                    Войти
-                  </Link>
-                </>
+            <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
+              <Input
+                id={REGISTER_FIELD_IDS.displayName}
+                ref={displayNameRef}
+                label="Имя"
+                name="name"
+                autoComplete="name"
+                value={displayName}
+                error={fieldErrors.displayName}
+                onChange={handleDisplayNameChange}
+                required
+              />
+              <Input
+                id={REGISTER_FIELD_IDS.email}
+                ref={emailRef}
+                label="Email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                error={fieldErrors.email}
+                onChange={handleEmailChange}
+                required
+              />
+              <Input
+                id={REGISTER_FIELD_IDS.password}
+                ref={passwordRef}
+                label="Пароль"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                hint={PASSWORD_HINT}
+                minLength={8}
+                value={password}
+                error={fieldErrors.password}
+                onChange={handlePasswordChange}
+                required
+              />
+              <Input
+                id={REGISTER_FIELD_IDS.passwordConfirm}
+                ref={passwordConfirmRef}
+                label="Подтверждение пароля"
+                name="passwordConfirm"
+                type="password"
+                autoComplete="new-password"
+                value={passwordConfirm}
+                error={fieldErrors.passwordConfirm}
+                onChange={handlePasswordConfirmChange}
+                required
+              />
+              <Alert variant="info">
+                Привязка Telegram для восстановления пароля будет доступна позже в личном кабинете.
+              </Alert>
+              {formError && (
+                <Alert variant="error" live>
+                  {formError}
+                  {isEmailTaken && (
+                    <>
+                      {' '}
+                      <Link className={styles.errorLink} to="/login">
+                        Войти
+                      </Link>
+                    </>
+                  )}
+                </Alert>
               )}
-            </Alert>
-          )}
-          <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
-            Зарегистрироваться
-          </Button>
-        </form>
+              <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
+                Зарегистрироваться
+              </Button>
+            </form>
 
-        <p className={styles.footer}>
-          Уже есть аккаунт? <Link to="/login">Войти</Link>
-        </p>
-      </div>
-    </div>
+            <p className={styles.footer}>
+              Уже есть аккаунт? <Link to="/login">Войти</Link>
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

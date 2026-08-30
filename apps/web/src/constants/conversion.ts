@@ -1,3 +1,4 @@
+import type { JobFileFormat } from '@/types/api';
 import type { ConversionRoute } from '@/types/conversion';
 
 export const MAX_FILE_SIZE_MB = 10;
@@ -18,6 +19,13 @@ export const ROUTE_ACCEPT_EXTENSIONS: Record<ConversionRoute, readonly string[]>
 };
 
 export const DEFAULT_CONVERSION_ROUTE: ConversionRoute = 'jpg-to-png';
+
+export const ROUTE_TARGET_FORMAT: Record<ConversionRoute, JobFileFormat> = {
+  'jpg-to-png': 'png',
+  'png-to-jpg': 'jpg',
+  'docx-to-pdf': 'pdf',
+  'pdf-to-docx': 'docx',
+};
 
 export const getConversionRouteLabel = (route: ConversionRoute): string => {
   const option = CONVERSION_ROUTE_OPTIONS.find((item) => item.value === route);

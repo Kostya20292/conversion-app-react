@@ -1,10 +1,29 @@
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_CONVERSION_ROUTE } from '@/constants/conversion';
-import { useConversionStore } from '@/features/conversion/conversionStore';
+import { useConversionStore, type ConversionPhase } from '@/features/conversion/conversionStore';
+import { HomePage } from '@/pages/Home/HomePage';
 import { createTestFile } from '@/test/createTestFile';
 import { renderWithRouter } from '@/test/renderWithRouter';
-import { HomePage } from './HomePage';
+import type { ConversionJob } from '@/types/api';
+
+const seedSelectedFile = (
+  patch: Partial<{
+    phase: ConversionPhase;
+    job: ConversionJob | null;
+    error: string | null;
+  }> = {},
+) => {
+  const file = createTestFile('photo.jpg', { type: 'image/jpeg' });
+  useConversionStore.setState({
+    route: DEFAULT_CONVERSION_ROUTE,
+    file,
+    error: null,
+    phase: 'idle',
+    job: null,
+    ...patch,
+  });
+};
 
 describe('HomePage', () => {
   beforeEach(() => {
@@ -12,6 +31,8 @@ describe('HomePage', () => {
       route: DEFAULT_CONVERSION_ROUTE,
       file: null,
       error: null,
+      phase: 'idle',
+      job: null,
     });
   });
 
@@ -56,5 +77,85 @@ describe('HomePage', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Для PNG → JPG нужен файл .png');
     expect(screen.getByRole('button', { name: 'Конвертировать' })).toBeDisabled();
+  });
+
+  it('во время загрузки показывает прогресс и блокирует повторный запуск', () => {
+    seedSelectedFile({ phase: 'uploading' });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('progressbar', { name: 'Загрузка файла' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Конвертировать' })).toBeDisabled();
+  });
+
+  it('во время конвертации показывает статус задачи', () => {
+    seedSelectedFile({
+      phase: 'processing',
+      job: { id: 'job-1', status: 'processing' },
+    });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('status', { name: 'Идёт конвертация' })).toBeInTheDocument();
+  });
+
+  it('после успеха предлагает скачать и поделиться', () => {
+    seedSelectedFile({
+      phase: 'completed',
+      job: {
+        id: 'job-1',
+        status: 'completed',
+        download_url: '/api/jobs/job-1/download?token=t',
+      },
+    });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('button', { name: 'Скачать' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Поделиться' })).toBeInTheDocument();
+  });
+
+  it('при ошибке конвертации предлагает повторить', () => {
+    seedSelectedFile({
+      phase: 'failed',
+      error: 'Не удалось конвертировать. Файл может быть повреждён',
+    });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Не удалось конвертировать. Файл может быть повреждён',
+    );
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeEnabled();
+  });
+
+  it('при таймауте конвертации показывает превышение времени', () => {
+    seedSelectedFile({
+      phase: 'failed',
+      error: 'Превышено время конвертации',
+    });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Превышено время конвертации');
+  });
+
+  it('при обрыве сети на загрузке предлагает проверить соединение', () => {
+    seedSelectedFile({
+      phase: 'failed',
+      error: 'Не удалось загрузить. Проверьте соединение',
+    });
+    renderWithRouter(<HomePage />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Не удалось загрузить. Проверьте соединение',
+    );
+  });
+
+  it('после повтора снова позволяет конвертировать тот же файл', async () => {
+    seedSelectedFile({
+      phase: 'failed',
+      error: 'Не удалось конвертировать. Файл может быть повреждён',
+    });
+    const { user } = renderWithRouter(<HomePage />);
+
+    await user.click(screen.getByRole('button', { name: 'Повторить' }));
+
+    expect(screen.getByRole('button', { name: 'Конвертировать' })).toBeEnabled();
   });
 });

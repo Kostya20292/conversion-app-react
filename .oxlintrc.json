@@ -205,6 +205,38 @@
           }
         ]
       }
+    },
+    {
+      "files": ["**/*.{test,spec}.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": [
+        "apps/web/src/**/*.{test,spec}.{ts,tsx}",
+        "src/app/**/*.{test,spec}.{ts,tsx}",
+        "src/pages/**/*.{test,spec}.{ts,tsx}",
+        "src/components/**/*.{test,spec}.{ts,tsx}",
+        "src/features/**/*.{test,spec}.{ts,tsx}",
+        "src/api/**/*.{test,spec}.{ts,tsx}",
+        "src/lib/**/*.{test,spec}.{ts,tsx}",
+        "src/constants/**/*.{test,spec}.{ts,tsx}",
+        "src/types/**/*.{test,spec}.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^\\./",
+                "message": "В foo.test.ts не импортировать ./foo: TypeScript путает это с самим тестом. Писать @/lib/foo (или другой слой)."
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

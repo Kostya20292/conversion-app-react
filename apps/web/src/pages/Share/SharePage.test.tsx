@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SharePage } from './SharePage';
+import { SharePage } from '@/pages/Share/SharePage';
 
 const renderSharePage = (token: string) =>
   render(

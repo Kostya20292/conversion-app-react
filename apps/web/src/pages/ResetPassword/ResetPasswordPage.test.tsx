@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { ResetPasswordPage } from '@/pages/ResetPassword/ResetPasswordPage';
 import { renderWithRouter } from '@/test/renderWithRouter';
-import { ResetPasswordPage } from './ResetPasswordPage';
 
 describe('ResetPasswordPage', () => {
   it('требует код и валидный новый пароль', async () => {

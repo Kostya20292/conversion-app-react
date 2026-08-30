@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import type { SubmitEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/app/authStore';
-import { Alert } from '@/components/Alert/Alert';
 import { Banner } from '@/components/Banner/Banner';
 import { Button } from '@/components/Button/Button';
 import { Dropzone } from '@/components/Dropzone/Dropzone';
+import { JobStatus } from '@/components/JobStatus/JobStatus';
 import { SegmentedControl } from '@/components/SegmentedControl/SegmentedControl';
 import { CONVERSION_ROUTE_OPTIONS } from '@/constants/conversion';
 import { useConversionStore } from '@/features/conversion/conversionStore';
@@ -15,30 +15,53 @@ export const HomePage = () => {
   const route = useConversionStore((state) => state.route);
   const file = useConversionStore((state) => state.file);
   const error = useConversionStore((state) => state.error);
+  const phase = useConversionStore((state) => state.phase);
+  const job = useConversionStore((state) => state.job);
   const setRoute = useConversionStore((state) => state.setRoute);
   const selectFiles = useConversionStore((state) => state.selectFiles);
   const clearFile = useConversionStore((state) => state.clearFile);
-  const canConvert = Boolean(file) && !error;
-  const [isConvertAcknowledged, setIsConvertAcknowledged] = useState(false);
+  const startConversion = useConversionStore((state) => state.startConversion);
+  const retryConversion = useConversionStore((state) => state.retryConversion);
+  const isBusy = phase === 'uploading' || phase === 'processing';
+  const canConvert = Boolean(file) && !error && phase === 'idle';
+  const dropzoneError = phase === 'failed' ? null : error;
   const isAuthenticated = useAuthStore((state) => state.status) === 'authenticated';
 
   const handleRouteChange = (nextRoute: ConversionRoute) => {
-    setIsConvertAcknowledged(false);
     setRoute(nextRoute);
   };
 
   const handleSelectFiles = (files: File[]) => {
-    setIsConvertAcknowledged(false);
     selectFiles(files);
   };
 
   const handleClearFile = () => {
-    setIsConvertAcknowledged(false);
     clearFile();
   };
 
-  const handleConvert = () => {
-    setIsConvertAcknowledged(true);
+  const handleConvert = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void startConversion();
+  };
+
+  const handleDownload = () => {
+    const downloadUrl = job?.download_url;
+    if (!downloadUrl) {
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.setAttribute('download', '');
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
+  const handleShare = () => {};
+
+  const handleRetry = () => {
+    retryConversion();
   };
 
   return (
@@ -49,33 +72,42 @@ export const HomePage = () => {
         </h1>
         <p className={styles.subtitle}>Конвертируйте файлы онлайн и через API</p>
 
-        <div className={styles.controls}>
-          <SegmentedControl
-            ariaLabel="Направление конвертации"
-            className={styles.routeControl}
-            options={CONVERSION_ROUTE_OPTIONS}
-            value={route}
-            onChange={handleRouteChange}
-          />
-        </div>
+        <form className={styles.convertForm} onSubmit={handleConvert}>
+          <div className={styles.controls}>
+            <SegmentedControl
+              ariaLabel="Направление конвертации"
+              className={styles.routeControl}
+              options={CONVERSION_ROUTE_OPTIONS}
+              value={route}
+              onChange={handleRouteChange}
+            />
+          </div>
 
-        <div className={styles.upload}>
-          <Dropzone
-            file={file}
-            error={error}
-            onFilesSelected={handleSelectFiles}
-            onClear={handleClearFile}
-          />
-        </div>
+          <div className={styles.upload}>
+            <Dropzone
+              file={file}
+              error={dropzoneError}
+              onFilesSelected={handleSelectFiles}
+              onClear={handleClearFile}
+            />
+          </div>
 
-        <Button disabled={!canConvert} className={styles.cta} onClick={handleConvert}>
-          Конвертировать
-        </Button>
-        {isConvertAcknowledged && (
-          <Alert variant="info" live className={styles.convertNotice}>
-            Конвертация подключится на следующем этапе.
-          </Alert>
-        )}
+          {phase !== 'completed' && phase !== 'failed' && (
+            <Button type="submit" disabled={!canConvert || isBusy} className={styles.cta}>
+              Конвертировать
+            </Button>
+          )}
+
+          {phase !== 'idle' && (
+            <JobStatus
+              phase={phase}
+              error={error}
+              onDownload={handleDownload}
+              onShare={handleShare}
+              onRetry={handleRetry}
+            />
+          )}
+        </form>
       </section>
 
       {!isAuthenticated && (

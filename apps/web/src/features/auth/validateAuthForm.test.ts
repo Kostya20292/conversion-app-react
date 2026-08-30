@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateLoginForm, validateRegisterForm } from './validateAuthForm';
+import { validateLoginForm, validateRegisterForm } from '@/features/auth/validateAuthForm';
 
 describe('validateLoginForm', () => {
   it('требует email и пароль', () => {

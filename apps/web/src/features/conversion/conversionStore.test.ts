@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_CONVERSION_ROUTE } from '@/constants/conversion';
 import { createTestFile } from '@/test/createTestFile';
-import { useConversionStore } from './conversionStore';
+import { useConversionStore } from '@/features/conversion/conversionStore';
 
 const resetConversionStore = () => {
   useConversionStore.setState({
     route: DEFAULT_CONVERSION_ROUTE,
     file: null,
     error: null,
+    phase: 'idle',
+    job: null,
   });
 };
 

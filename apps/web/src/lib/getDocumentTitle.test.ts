@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDocumentTitle } from './getDocumentTitle';
+import { getDocumentTitle } from '@/lib/getDocumentTitle';
 
 describe('getDocumentTitle', () => {
   it('задаёт title главной', () => {

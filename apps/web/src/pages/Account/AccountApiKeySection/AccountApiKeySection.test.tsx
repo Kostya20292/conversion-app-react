@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { AccountApiKeySection } from './AccountApiKeySection';
+import { AccountApiKeySection } from '@/pages/Account/AccountApiKeySection/AccountApiKeySection';
 
 describe('AccountApiKeySection', () => {
   it('маскирует ключ, пока его не показали', () => {

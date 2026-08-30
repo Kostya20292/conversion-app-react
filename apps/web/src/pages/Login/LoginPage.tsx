@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiRequestError, NetworkError } from '@/api/http';
 import { useAuthStore } from '@/app/authStore';
@@ -68,7 +68,7 @@ export const LoginPage = () => {
     syncFieldError('password', { email, password: value });
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitAttempted(true);
 
@@ -104,70 +104,68 @@ export const LoginPage = () => {
     }
   };
 
-  if (status === 'loading') {
-    return (
-      <div className="container narrowPage">
-        <Spinner label="Проверяем сессию" />
-      </div>
-    );
-  }
-
-  if (status === 'authenticated') {
-    return <Navigate to={nextPath} replace />;
-  }
-
   return (
-    <div className="container narrowPage">
-      <div className={styles.card}>
-        <h1 className={styles.title}>Вход</h1>
-        <p className={styles.lead}>Войдите, чтобы открыть личный кабинет и API-ключ.</p>
-
-        <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
-          <Input
-            id={LOGIN_FIELD_IDS.email}
-            ref={emailRef}
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            error={fieldErrors.email}
-            onChange={handleEmailChange}
-            required
-          />
-          <Input
-            id={LOGIN_FIELD_IDS.password}
-            ref={passwordRef}
-            label="Пароль"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            error={fieldErrors.password}
-            onChange={handlePasswordChange}
-            required
-          />
-          <Checkbox
-            id="login-remember"
-            label="Запомнить меня"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-          />
-          {formError && (
-            <Alert variant="error" live>
-              {formError}
-            </Alert>
-          )}
-          <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
-            Войти
-          </Button>
-        </form>
-
-        <div className={styles.links}>
-          <Link to="/forgot-password">Забыли пароль?</Link>
-          <Link to="/register">Создать аккаунт</Link>
+    <>
+      {status === 'loading' && (
+        <div className="container narrowPage">
+          <Spinner label="Проверяем сессию" />
         </div>
-      </div>
-    </div>
+      )}
+      {status === 'authenticated' && <Navigate to={nextPath} replace />}
+      {status === 'anonymous' && (
+        <div className="container narrowPage">
+          <div className={styles.card}>
+            <h1 className={styles.title}>Вход</h1>
+            <p className={styles.lead}>Войдите, чтобы открыть личный кабинет и API-ключ.</p>
+
+            <form className={styles.form} onSubmit={(event) => void handleSubmit(event)} noValidate>
+              <Input
+                id={LOGIN_FIELD_IDS.email}
+                ref={emailRef}
+                label="Email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                error={fieldErrors.email}
+                onChange={handleEmailChange}
+                required
+              />
+              <Input
+                id={LOGIN_FIELD_IDS.password}
+                ref={passwordRef}
+                label="Пароль"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                error={fieldErrors.password}
+                onChange={handlePasswordChange}
+                required
+              />
+              <Checkbox
+                id="login-remember"
+                label="Запомнить меня"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+              />
+              {formError && (
+                <Alert variant="error" live>
+                  {formError}
+                </Alert>
+              )}
+              <Button type="submit" fullWidth disabled={isSubmitting} aria-busy={isSubmitting}>
+                Войти
+              </Button>
+            </form>
+
+            <div className={styles.links}>
+              <Link to="/forgot-password">Забыли пароль?</Link>
+              <Link to="/register">Создать аккаунт</Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };

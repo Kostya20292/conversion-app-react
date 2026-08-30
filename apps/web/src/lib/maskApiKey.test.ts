@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maskApiKey } from './maskApiKey';
+import { maskApiKey } from '@/lib/maskApiKey';
 
 describe('maskApiKey', () => {
   it('не показывает полный ключ, оставляя префикс cv_live_', () => {

@@ -29,6 +29,7 @@ React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../..
 - Кросс-папка: `import { Button } from '@/components/Button/Button'`.
 - Та же папка и дети маршрута: `./Component.types`, `./Component.module.scss`, `./AccountFileList/AccountFileList`.
 - Никогда `../` — вместо этого `@/`.
+- В `foo.test.ts` не импортировать `./foo`: язык сервис путает это с самим тестом (`foo.test.ts`). Писать `@/features/.../foo` (или другой слой). Oxlint: `no-restricted-imports` на `./` в `apps/web/src/**/*.{test,spec}.*`. Не включать `allowArbitraryExtensions` в `tsconfig.app.json`.
 - `pages` не импортируют другие `pages`. `components` не зависят от `pages` / `features` / `api` / `app`. `features` не зависят от UI. `lib` — только `types` / `constants` / `lib`.
 
 ## Rules
@@ -41,6 +42,7 @@ React + TypeScript + Vite + React Router + Zustand + SCSS Modules ([stack](../..
 - One component per folder (`tsx` + `module.scss` + `types.ts` if local props exist). Details — [architecture](../../docs/architecture.md) §3.1.
 - `import type` from `./Component.types`; do not re-export types from the tsx.
 - Conditional UI without an else branch: `{cond && <X />}`, not `{cond ? <X /> : null}`. Keep ternary when both branches render.
+- Для `onSubmit` формы — `SubmitEvent<HTMLFormElement>`, не устаревший `FormEvent`.
 - A11y: `aria-label`, keyboard for interactive controls, meaningful `alt` / `role`.
 - React Compiler in use — do not add `useMemo`/`useCallback` unless needed.
 - Tests: Vitest / Playwright ([stack](../../docs/tech-stack.md) §7).

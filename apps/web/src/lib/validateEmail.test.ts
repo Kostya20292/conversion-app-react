@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateEmail } from './validateEmail';
+import { validateEmail } from '@/lib/validateEmail';
 
 describe('validateEmail', () => {
   it('отклоняет пустой email', () => {

@@ -122,7 +122,9 @@ export const apiFetch = async <T>(path: string, options: ApiFetchOptions = {}): 
   const { errorContext, notify, headers, ...init } = options;
   const requestHeaders = new Headers(headers);
 
-  if (init.body !== undefined && !requestHeaders.has('Content-Type')) {
+  const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+
+  if (init.body !== undefined && !isFormData && !requestHeaders.has('Content-Type')) {
     requestHeaders.set('Content-Type', 'application/json');
   }
 

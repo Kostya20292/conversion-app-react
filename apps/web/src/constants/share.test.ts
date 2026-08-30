@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isUnavailableSharePreview } from './share';
+import { isUnavailableSharePreview } from '@/constants/share';
 
 describe('isUnavailableSharePreview', () => {
   it('считает истёкшую ссылку недоступной', () => {

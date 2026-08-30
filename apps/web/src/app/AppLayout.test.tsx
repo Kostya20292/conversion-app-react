@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { AppLayout } from './AppLayout';
+import { AppLayout } from '@/app/AppLayout';
 
 describe('AppLayout', () => {
   it('даёт skip-link к содержимому и вход для гостя', () => {

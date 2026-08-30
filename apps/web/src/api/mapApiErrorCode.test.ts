@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapApiErrorCode, mapNetworkError } from './mapApiErrorCode';
+import { mapApiErrorCode, mapNetworkError } from '@/api/mapApiErrorCode';
 
 describe('mapApiErrorCode', () => {
   it('не показывает английский error.message как основной текст', () => {

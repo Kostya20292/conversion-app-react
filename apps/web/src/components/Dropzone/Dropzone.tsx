@@ -60,16 +60,14 @@ export const Dropzone = ({ file, error, onFilesSelected, onClear }: DropzoneProp
     >
       <input {...getInputProps({ 'aria-label': 'Выбрать файл для конвертации', tabIndex: -1 })} />
 
-      {isDragActive ? (
-        <p className={styles.title}>Отпустите файл сюда</p>
-      ) : file ? (
+      {isDragActive && <p className={styles.title}>Отпустите файл сюда</p>}
+      {!isDragActive && file && (
         <div className={styles.file}>
           <p className={styles.fileName}>{file.name}</p>
           <p className={styles.fileSize}>{formatFileSize(file.size)}</p>
         </div>
-      ) : (
-        <p className={styles.title}>Перетащите файл сюда</p>
       )}
+      {!isDragActive && !file && <p className={styles.title}>Перетащите файл сюда</p>}
 
       <p id={hintId} className={styles.hint}>
         1 файл, до {MAX_FILE_SIZE_MB} МБ

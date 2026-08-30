@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_FILE_SIZE_BYTES } from '@/constants/conversion';
+import { validateConversionFile } from '@/features/conversion/validateFile';
 import { createTestFile } from '@/test/createTestFile';
-import { validateConversionFile } from './validateFile';
 
 describe('validateConversionFile', () => {
   it('отклоняет выбор без файла', () => {

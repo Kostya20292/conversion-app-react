@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validatePassword, validatePasswordConfirmation } from './validatePassword';
+import { validatePassword, validatePasswordConfirmation } from '@/lib/validatePassword';
 
 describe('validatePassword', () => {
   it('отклоняет пустой пароль', () => {
