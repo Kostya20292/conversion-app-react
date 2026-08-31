@@ -1,6 +1,23 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalEnv": ["NODE_ENV", "DATABASE_URL", "JWT_SECRET", "CORS_ORIGIN", "PORT", "STORAGE_ROOT"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "CORS_ORIGIN",
+    "PORT",
+    "STORAGE_ROOT",
+    "LIBREOFFICE_DOCKER_IMAGE"
+  ],
+  "globalPassThroughEnv": [
+    "PATH",
+    "HOME",
+    "CI",
+    "LIBREOFFICE_DOCKER_IMAGE",
+    "DOCKER_HOST",
+    "DOCKER_TLS_VERIFY",
+    "DOCKER_CERT_PATH"
+  ],
   "tasks": {
     "dev": {
       "cache": false,

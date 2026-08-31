@@ -1,7 +1,7 @@
 import { execFile as execFileCallback } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -23,6 +23,9 @@ type OfficeFormat = 'docx' | 'pdf';
 type ExecFileError = Error & {
   killed?: boolean;
   signal?: NodeJS.Signals | number | null;
+  stderr?: string;
+  stdout?: string;
+  code?: string | number;
 };
 
 type LibreOfficeEngine =
@@ -40,14 +43,28 @@ export const convertWithLibreOffice = async (
   }
 
   const workDir = await createLibreOfficeWorkDir();
+  await chmod(workDir, 0o777);
   const inputPath = path.join(workDir, `source.${sourceFormat}`);
   const outputPath = path.join(workDir, `source.${targetFormat}`);
   const containerName = `convertly-lo-${randomUUID()}`;
 
   try {
     await writeFile(inputPath, bytes);
+    await chmod(inputPath, 0o666);
     if (engine.kind === 'docker') {
-      await runInDocker(engine, workDir, containerName, sourceFormat, targetFormat);
+      try {
+        await runInDocker(engine, workDir, containerName, sourceFormat, targetFormat);
+      } catch (dockerError: unknown) {
+        const hostBin = await resolveExecutable(LIBREOFFICE_BINARIES);
+        if (hostBin === null) {
+          throw dockerError;
+        }
+
+        logger.warn(
+          `LibreOffice Docker run failed, falling back to host: ${formatExecError(dockerError)}`,
+        );
+        await runOnHost(hostBin, workDir, inputPath, sourceFormat, targetFormat);
+      }
     } else {
       await runOnHost(engine.bin, workDir, inputPath, sourceFormat, targetFormat);
     }
@@ -64,11 +81,11 @@ export const convertWithLibreOffice = async (
     }
 
     if (isExecTimeout(error)) {
-      logger.error('LibreOffice conversion timed out');
+      logger.error(`LibreOffice conversion timed out: ${formatExecError(error)}`);
       throw new ApiException('conversion_timeout', undefined, error);
     }
 
-    logger.error('LibreOffice conversion failed');
+    logger.error(`LibreOffice conversion failed: ${formatExecError(error)}`);
     throw new ApiException('conversion_failed', undefined, error);
   } finally {
     if (engine.kind === 'docker') {
@@ -120,6 +137,10 @@ const runInDocker = async (
       '--network=none',
       '--name',
       containerName,
+      '-e',
+      'HOME=/work',
+      '-e',
+      'SAL_USE_VCLPLUGIN=svp',
       '-v',
       `${workDir}:${CONTAINER_WORK_DIR}`,
       engine.image,
@@ -132,7 +153,7 @@ const runInDocker = async (
         targetFormat,
       ),
     ],
-    { timeout: ENGINE_TIMEOUT_MS },
+    { timeout: ENGINE_TIMEOUT_MS, maxBuffer: 2 * 1024 * 1024 },
   );
 };
 
@@ -179,6 +200,23 @@ const createLibreOfficeWorkDir = async (): Promise<string> => {
   } catch {
     return mkdtemp(path.join(tmpdir(), 'convertly-lo-'));
   }
+};
+
+const formatExecError = (error: unknown): string => {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const execError = error as ExecFileError;
+  const parts = [execError.message];
+  if (typeof execError.stderr === 'string' && execError.stderr.trim().length > 0) {
+    parts.push(execError.stderr.trim());
+  }
+  if (typeof execError.stdout === 'string' && execError.stdout.trim().length > 0) {
+    parts.push(execError.stdout.trim());
+  }
+
+  return parts.join('\n');
 };
 
 const extraDockerDirs = (): string[] => {

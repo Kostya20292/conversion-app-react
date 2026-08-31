@@ -7,6 +7,7 @@ on:
 jobs:
   unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16
@@ -36,6 +37,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build LibreOffice image
         run: docker compose build libreoffice
+      - name: Verify LibreOffice image
+        run: docker run --rm -e SAL_USE_VCLPLUGIN=svp convertly-libreoffice:local soffice --version
       - name: Run unit tests
         run: pnpm test
         env:
@@ -48,6 +51,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -77,5 +81,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build LibreOffice image
         run: docker compose build libreoffice
+      - name: Verify LibreOffice image
+        run: docker run --rm -e SAL_USE_VCLPLUGIN=svp convertly-libreoffice:local soffice --version
       - run: pnpm --filter @convertly/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
