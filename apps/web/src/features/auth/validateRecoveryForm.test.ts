@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { validateForgotPasswordForm, validateResetPasswordForm } from '@/features/auth/validateAuthForm';
+import {
+  validateForgotPasswordForm,
+  validateResetPasswordForm,
+} from '@/features/auth/validateAuthForm';
 
 describe('validateForgotPasswordForm', () => {
   it('требует email', () => {

@@ -4,8 +4,7 @@ export const JOB_POLL_INTERVAL_MS = 2_000;
 export const CONVERSION_TIMEOUT_MS = 60_000;
 
 export type PollConversionJobResult =
-  | { ok: true; job: ConversionJob }
-  | { ok: false; code: ApiErrorCode };
+  { ok: true; job: ConversionJob } | { ok: false; code: ApiErrorCode };
 
 const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {

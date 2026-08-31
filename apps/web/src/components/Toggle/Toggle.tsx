@@ -21,19 +21,21 @@ export const Toggle = ({
           </span>
         )}
       </span>
-      <input
-        id={id}
-        type="checkbox"
-        role="switch"
-        className={styles.input}
-        disabled={disabled}
-        {...rest}
-        checked={checked}
-        aria-checked={checked}
-        aria-describedby={description ? `${id}-description` : undefined}
-      />
-      <span className={styles.track} aria-hidden="true">
-        <span className={styles.thumb} />
+      <span className={styles.control}>
+        <input
+          id={id}
+          type="checkbox"
+          role="switch"
+          className={styles.input}
+          disabled={disabled}
+          {...rest}
+          checked={checked}
+          aria-checked={checked}
+          aria-describedby={description ? `${id}-description` : undefined}
+        />
+        <span className={styles.track} aria-hidden="true">
+          <span className={styles.thumb} />
+        </span>
       </span>
     </label>
   </div>

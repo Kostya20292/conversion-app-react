@@ -111,7 +111,13 @@ export const Dropzone = ({ file, error, onFilesSelected, onClear }: DropzoneProp
         onClick: handleRootClick,
       })}
     >
-      <input {...getInputProps({ 'aria-label': 'Выбрать файл для конвертации', tabIndex: -1 })} />
+      <input
+        {...getInputProps({
+          'aria-label': 'Выбрать файл для конвертации',
+          tabIndex: -1,
+          'aria-hidden': true,
+        })}
+      />
 
       {isDragActive && <p className={styles.title}>Отпустите файл сюда</p>}
       {!isDragActive && file && (

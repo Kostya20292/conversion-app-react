@@ -1,9 +1,6 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
-import {
-  type ApiKeyAuthenticator,
-  API_KEY_AUTHENTICATOR,
-} from '@/common/api-key.authenticator';
+import { type ApiKeyAuthenticator, API_KEY_AUTHENTICATOR } from '@/common/api-key.authenticator';
 import type { AuthRequest } from '@/common/auth-request';
 import { ApiException } from '@/common/errors/api-exception';
 

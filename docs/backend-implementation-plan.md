@@ -235,7 +235,7 @@ GET completed отдаёт `download_url`, `expires_at`, `saved_to_profile: fals
 
 | Шаг  | Действие                                                                             | Критерий готовности                    | Статус |
 | ---- | ------------------------------------------------------------------------------------ | -------------------------------------- | ------ |
-| 8.1  | `conversion`: Sharp (JPG↔PNG), LibreOffice headless (DOCX↔PDF) через Docker | Юнит на фикстуре JPG→PNG без HTTP      | ✅     |
+| 8.1  | `conversion`: Sharp (JPG↔PNG), LibreOffice headless (DOCX↔PDF) через Docker          | Юнит на фикстуре JPG→PNG без HTTP      | ✅     |
 | 8.2  | Worker в том же процессе: claim `queued` → `processing` (атомарно, `SKIP LOCKED`)    | Два тика не берут один job             | ✅     |
 | 8.3  | Concurrency: **1** LibreOffice, до **2** Sharp одновременно                          | Очередь растёт, процесс не съедает RAM | ✅     |
 | 8.4  | Таймаут движка **60 с** → `failed` + `conversion_timeout`                            | Job не висит в `processing`            | ✅     |
@@ -424,9 +424,9 @@ SPA-контракт (cookie), который ждёт
 
 Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:
 register/login, guest POST job + GET, API 401 без ключа, guest download по signed URL, share 410,
-rate limit §7.6, TTL-cleanup — есть. LibreOffice: HTTP-кейс DOCX→PDF гонять, если собран Docker-образ
-или `soffice` в PATH, иначе не skip смысла кейса — гонять локально, в среде без движка не ослаблять
-assert.
+rate limit §7.6, TTL-cleanup — есть. LibreOffice: HTTP-кейс DOCX→PDF гонять, если собран
+Docker-образ или `soffice` в PATH, иначе не skip смысла кейса — гонять локально, в среде без движка
+не ослаблять assert.
 
 ---
 

@@ -140,7 +140,9 @@ describe('jobs worker and download HTTP (план §8, ТЗ §7.2 / §7.7)', () 
       new RegExp(`^/api/jobs/${createdBody.id}/download\\?token=`),
     );
     expect(Date.parse(polledBody.expires_at ?? '') - Date.now()).toBeGreaterThan(14 * 60 * 1000);
-    expect(Date.parse(polledBody.expires_at ?? '') - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
+    expect(Date.parse(polledBody.expires_at ?? '') - Date.now()).toBeLessThanOrEqual(
+      15 * 60 * 1000,
+    );
     expect(download.status).toBe(200);
     expect(download.headers.get('content-type')).toMatch(/image\/png/);
     expect(await detectExt(downloaded)).toBe('png');

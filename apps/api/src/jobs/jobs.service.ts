@@ -195,4 +195,4 @@ export class JobsService {
 
     return job;
   }
-};
+}

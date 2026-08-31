@@ -56,7 +56,7 @@
 | **Domain**  | Пользователи, jobs, StoredFile, ShareLink, ApiKey                             |
 | **Worker**  | Забирает `queued` → `processing` → движок → `completed` / `failed`            |
 | **Storage** | Локальные файлы по `job_id` / `file_id`; отдача только через API              |
-| **Engines** | JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice headless в Docker)             |
+| **Engines** | JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice headless в Docker)                     |
 
 Telegram — **mock-модуль** внутри API (без отдельного сервиса).
 

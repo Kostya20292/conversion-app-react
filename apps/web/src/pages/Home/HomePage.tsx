@@ -162,7 +162,7 @@ export const HomePage = () => {
         <section className={`container ${styles.section}`}>
           <Banner
             action={
-              <Link to="/login" className={styles.bannerLink}>
+              <Link to="/login" className={styles.bannerLink} aria-label="Открыть страницу входа">
                 Войти
               </Link>
             }
@@ -210,7 +210,7 @@ export const HomePage = () => {
           Конвертируйте файлы из своих сервисов по ключу. Документация с примерами curl и fetch.
         </p>
         <div className={styles.apiActions}>
-          <Link to="/api-docs" className={styles.textLink}>
+          <Link to="/api-docs" className={styles.textLink} aria-label="Открыть документацию">
             Открыть API docs
           </Link>
           <Link to={isAuthenticated ? '/account' : '/register'} className={styles.textLink}>

@@ -69,7 +69,10 @@ export class SignedDownloadTokenService {
   }
 
   verify(token: string, jobId: string): void {
-    this.verifyPayload(token, (payload) => isJobDownloadTokenPayload(payload) && payload.jobId === jobId);
+    this.verifyPayload(
+      token,
+      (payload) => isJobDownloadTokenPayload(payload) && payload.jobId === jobId,
+    );
   }
 
   verifyFile(token: string, fileId: string): void {
@@ -100,4 +103,7 @@ export class SignedDownloadTokenService {
 }
 
 const isExpiredJwt = (error: unknown): boolean =>
-  typeof error === 'object' && error !== null && 'name' in error && error.name === 'TokenExpiredError';
+  typeof error === 'object' &&
+  error !== null &&
+  'name' in error &&
+  error.name === 'TokenExpiredError';

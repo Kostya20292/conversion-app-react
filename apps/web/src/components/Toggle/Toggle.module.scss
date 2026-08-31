@@ -15,6 +15,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
 .title {
@@ -30,23 +31,37 @@
   color: var(--color-on-surface-muted);
 }
 
+.control {
+  position: relative;
+  flex-shrink: 0;
+  width: var(--control-height);
+  height: var(--control-height);
+}
+
 .input {
   position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  z-index: 1;
   margin: 0;
-  pointer-events: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.input:disabled {
+  cursor: not-allowed;
 }
 
 .track {
-  position: relative;
-  flex-shrink: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 44px;
   height: 26px;
   border-radius: var(--radius-full);
   background-color: var(--color-surface-overlay);
   border: 1px solid var(--color-border);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
