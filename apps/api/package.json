@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "bash ../../scripts/with-postgres.sh nest start --watch",
+    "dev": "bash ../../scripts/with-postgres.sh bash ../../scripts/with-libreoffice.sh nest start --watch",
     "build": "nest build",
     "start": "nest start",
-    "start:dev": "bash ../../scripts/with-postgres.sh nest start --watch",
+    "start:dev": "bash ../../scripts/with-postgres.sh bash ../../scripts/with-libreoffice.sh nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint .",

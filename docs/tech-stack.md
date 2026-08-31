@@ -19,7 +19,7 @@
 | Очередь jobs       | Статусы в БД + воркер в том же процессе Nest (без Redis) |
 | Файлы              | Локальный диск                                           |
 | Изображения        | Sharp                                                    |
-| Документы          | LibreOffice (headless), системная установка              |
+| Документы          | LibreOffice (headless) в Docker-образе                   |
 | Auth (UI)          | JWT в httpOnly cookie                                    |
 | Хэш паролей        | argon2                                                   |
 | Rate limit         | `@nestjs/throttler`                                      |
@@ -66,12 +66,15 @@
 
 ## 4. Движки конвертации
 
-| Направление      | Технология             | Комментарий                              |
-| ---------------- | ---------------------- | ---------------------------------------- |
-| JPG / JPEG → PNG | Sharp                  | Быстро, без внешних бинарников           |
-| PNG → JPG / JPEG | Sharp                  | То же                                    |
-| DOCX → PDF       | LibreOffice (headless) | Системная установка LibreOffice в PATH   |
-| PDF → DOCX       | LibreOffice (headless) | То же; качество зависит от структуры PDF |
+| Направление      | Технология             | Комментарий                                |
+| ---------------- | ---------------------- | ------------------------------------------ |
+| JPG / JPEG → PNG | Sharp                  | Быстро, без внешних бинарников             |
+| PNG → JPG / JPEG | Sharp                  | То же                                      |
+| DOCX → PDF       | LibreOffice (headless) | Docker-образ `convertly-libreoffice:local` |
+| PDF → DOCX       | LibreOffice (headless) | То же; качество зависит от структуры PDF   |
+
+Worker вызывает `soffice` через `docker run --rm`. Если образа нет — fallback на системный бинарь в
+PATH. PostgreSQL в этот Compose **не** входит.
 
 ---
 
@@ -108,12 +111,13 @@
 
 **Выбор:** monorepo + **Turborepo** (вариант B).
 
-| Путь        | Содержимое                                            |
-| ----------- | ----------------------------------------------------- |
-| `apps/web`  | React + Vite frontend                                 |
-| `apps/api`  | NestJS backend                                        |
-| `packages/` | Общие пакеты при необходимости (типы, eslint…)        |
-| корень      | `pnpm-workspace.yaml`, `turbo.json`, общие DX-скрипты |
+| Путь        | Содержимое                                                            |
+| ----------- | --------------------------------------------------------------------- |
+| `apps/web`  | React + Vite frontend                                                 |
+| `apps/api`  | NestJS backend                                                        |
+| `docker/`   | Dockerfile LibreOffice headless                                       |
+| `packages/` | Общие пакеты при необходимости (типы, eslint…)                        |
+| корень      | `pnpm-workspace.yaml`, `turbo.json`, `docker-compose.yml`, DX-скрипты |
 
 Workspaces через **pnpm**. Turborepo оркестрирует `dev` / `build` / `lint` / `test` по приложениям с
 кэшем задач.
@@ -129,7 +133,7 @@ Turborepo.
 | ------------------- | --------------------------------------------- |
 | Package manager     | **pnpm**                                      |
 | Структура репо      | Monorepo + Turborepo (`apps/web`, `apps/api`) |
-| LibreOffice         | Системная установка (бинарь в PATH)           |
+| LibreOffice         | Docker-образ headless (`docker run --rm`)     |
 | Backend / БД / ORM  | NestJS + TypeORM + PostgreSQL                 |
 | PostgreSQL локально | **Локальная установка** (не Docker Compose)   |
 | Очередь             | Статусы в БД + воркер в процессе Nest         |

@@ -25,7 +25,7 @@ File conversion web service. Source of truth:
 
 - One operation = **one file** ([task](../../docs/technical-task.md) §2).
 - Flow: upload → `ConversionJob` (`queued` → `processing` → `completed`/`failed`) → polling → download ([architecture](../../docs/architecture.md) §4.1).
-- Formats v1: JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice) ([stack](../../docs/tech-stack.md) §4).
+- Formats v1: JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice в Docker) ([stack](../../docs/tech-stack.md) §4).
 - Limits: 10 MB, 60s timeout, rate limits per [task](../../docs/technical-task.md) §7.6.
 
 ## Auth

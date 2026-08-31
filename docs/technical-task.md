@@ -715,7 +715,7 @@ hero.
 | 7   | Пароль на share-ссылку     | **Нет**; только token + TTL + отзыв                                        |
 | 8   | Пакетная конвертация       | **Вне scope v1**; только один файл за операцию                             |
 | 9   | Очередь jobs               | Статусы в PostgreSQL + воркер в процессе Nest (без Redis)                  |
-| 10  | LibreOffice                | Системная установка (бинарь в PATH), не Docker                             |
+| 10  | LibreOffice                | Docker-образ headless; worker вызывает `soffice` через `docker run --rm`   |
 | 11  | Структура репо             | Monorepo + Turborepo: `apps/web` (React) + `apps/api` (NestJS)             |
 | 12  | ЛК URL                     | **`/account`**                                                             |
 | 13  | «Запомнить меня»           | Обязательный чекбокс: 30 суток / session cookie                            |

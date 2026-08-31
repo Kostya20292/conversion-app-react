@@ -45,7 +45,7 @@
          ▼                 ▼
 ┌─────────────────┐ ┌─────────────────────┐
 │ PostgreSQL      │ │ Conversion engines  │
-│ (TypeORM)       │ │ Sharp · LibreOffice │
+│ (TypeORM)       │ │ Sharp · LO (Docker) │
 └─────────────────┘ └─────────────────────┘
 ```
 
@@ -56,7 +56,7 @@
 | **Domain**  | Пользователи, jobs, StoredFile, ShareLink, ApiKey                             |
 | **Worker**  | Забирает `queued` → `processing` → движок → `completed` / `failed`            |
 | **Storage** | Локальные файлы по `job_id` / `file_id`; отдача только через API              |
-| **Engines** | JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice headless)                              |
+| **Engines** | JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice headless в Docker)             |
 
 Telegram — **mock-модуль** внутри API (без отдельного сервиса).
 
@@ -68,9 +68,11 @@ Telegram — **mock-модуль** внутри API (без отдельного
 conversion-app-react/
 ├── apps/web/          # React + Vite + SCSS Modules
 ├── apps/api/          # NestJS + TypeORM
+├── docker/            # образ LibreOffice (headless)
 ├── packages/          # общие типы / eslint (по мере надобности)
 ├── storage/           # локальные файлы (не в git)
 ├── docs/
+├── docker-compose.yml # сборка образа LibreOffice (не PostgreSQL)
 ├── pnpm-workspace.yaml
 └── turbo.json
 ```
@@ -141,7 +143,7 @@ apps/api/
 │   ├── jobs/                # POST/GET jobs, download; создание ConversionJob
 │   ├── files/               # StoredFile: список / удаление из профиля
 │   ├── shares/              # create / list / revoke; GET public /s/:token
-│   ├── conversion/          # движки: Sharp, LibreOffice adapter
+│   ├── conversion/          # движки: Sharp, LibreOffice (docker run / host)
 │   ├── storage/             # запись/чтение/удаление на диске (без path traversal)
 │   ├── worker/              # polling queued jobs → processing → engines
 │   ├── cleanup/             # @nestjs/schedule: TTL uploads/results/shares
@@ -305,7 +307,8 @@ API. До перехода на A: concurrency worker’а, rate limit, верт
 worker-сервиса).
 
 **Не делаем в v1:** пакетная конвертация, отдельный object storage / CDN, живой Telegram Bot API,
-антивирус, 2FA, Docker Compose для PostgreSQL, горизонтальный автоскейл воркеров.
+антивирус, 2FA, Docker Compose для PostgreSQL, горизонтальный автоскейл воркеров. Compose в v1 —
+только сборка образа LibreOffice.
 
 ---
 

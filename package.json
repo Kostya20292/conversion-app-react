@@ -10,8 +10,9 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev": "bash scripts/with-postgres.sh turbo run dev",
-    "dev:api": "bash scripts/with-postgres.sh turbo run dev --filter=@convertly/api",
+    "dev": "bash scripts/with-postgres.sh bash scripts/with-libreoffice.sh turbo run dev",
+    "dev:api": "bash scripts/with-postgres.sh bash scripts/with-libreoffice.sh turbo run dev --filter=@convertly/api",
+    "libreoffice:build": "docker compose build libreoffice",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "preview": "pnpm --filter @convertly/web preview",

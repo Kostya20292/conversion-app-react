@@ -1,0 +1,9 @@
+# Только образ LibreOffice для DOCX↔PDF.
+# PostgreSQL в v1 — локальная установка, не этот файл.
+services:
+  libreoffice:
+    build:
+      context: ./docker/libreoffice
+    image: convertly-libreoffice:local
+    profiles:
+      - libreoffice
