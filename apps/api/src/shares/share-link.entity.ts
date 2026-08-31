@@ -16,6 +16,9 @@ import { User } from '@/users/user.entity';
 @Index('uq_share_link_token', ['token'], { unique: true })
 @Index('idx_share_link_expires_at', ['expiresAt'])
 @Index('idx_share_link_owner_user_id', ['ownerUserId'])
+@Index('idx_share_link_owner_created_id', ['ownerUserId', 'createdAt', 'id'], {
+  where: '"revoked_at" IS NULL',
+})
 @Index('idx_share_link_job_id', ['jobId'])
 @Index('idx_share_link_file_id', ['fileId'])
 @Index('idx_share_link_active', ['token'], { where: '"revoked_at" IS NULL' })

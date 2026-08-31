@@ -14,7 +14,7 @@ import { ConversionJob } from '@/jobs/conversion-job.entity';
 import { User } from '@/users/user.entity';
 
 @Entity({ name: 'stored_file' })
-@Index('idx_stored_file_user_id', ['userId'])
+@Index('idx_stored_file_user_created_id', ['userId', 'createdAt', 'id'])
 @Index('idx_stored_file_job_id', ['jobId'])
 @Check(sqlInCheck('source', REQUEST_SOURCES))
 @Check('"size" > 0')
