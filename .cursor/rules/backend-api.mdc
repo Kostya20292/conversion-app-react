@@ -18,7 +18,7 @@ NestJS + TypeORM + PostgreSQL ([stack](../../docs/tech-stack.md) §3). HTTP, wor
 
 ## Modules
 
-`auth`, `users`, `api-keys`, `jobs`, `files`, `shares`, `conversion`, `storage`, `worker`, `cleanup`, `telegram` (mock), `common`.
+`auth`, `users`, `api-keys`, `jobs`, `files`, `shares`, `conversion`, `storage`, `worker`, `cleanup`, `telegram` (grammY + mock fallback), `common`.
 
 ## Jobs & files
 
@@ -35,7 +35,7 @@ Brief; full security checklist — [security.mdc](./security.mdc).
 - `/api/auth/*` — JWT cookie (httpOnly); passwords — **argon2** ([architecture](../../docs/architecture.md) §4.2).
 - `/api/v1/*` — `X-API-Key` (hash + prefix in DB).
 - Rate limit — `@nestjs/throttler` ([task](../../docs/technical-task.md) §7.6).
-- Telegram in v1 — **mock module**, no live Bot API ([stack](../../docs/tech-stack.md) §6).
+- Telegram — **grammY** при `TELEGRAM_BOT_TOKEN`; mock без токена и в `NODE_ENV=test` ([stack](../../docs/tech-stack.md) §6).
 
 ## TTL (cleanup cron)
 

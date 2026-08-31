@@ -45,3 +45,9 @@
 .telegramAction {
   min-width: 13.5rem;
 }
+
+.telegramLink {
+  color: var(--color-primary);
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-line);
+}

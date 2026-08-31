@@ -18,6 +18,7 @@ import {
   NEUTRAL_FORGOT_MESSAGE,
   PASSWORD_RESET_TTL_MS,
 } from '@/telegram/telegram.constants';
+import { TelegramBotService } from '@/telegram/telegram-bot.service';
 import { TelegramService } from '@/telegram/telegram.service';
 import { User } from '@/users/user.entity';
 import {
@@ -67,6 +68,7 @@ export class AuthService {
     private readonly apiKeys: ApiKeysService,
     private readonly dataSource: DataSource,
     private readonly telegram: TelegramService,
+    private readonly telegramBot: TelegramBotService,
   ) {}
 
   async register(dto: RegisterDto, response: Response): Promise<RegisterResponse> {
@@ -173,6 +175,7 @@ export class AuthService {
       }),
     );
     this.telegram.putInbox(telegramId, code);
+    await this.telegramBot.sendResetCode(telegramId, code);
 
     return { message: NEUTRAL_FORGOT_MESSAGE };
   }

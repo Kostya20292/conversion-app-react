@@ -1,0 +1,2 @@
+export const TELEGRAM_BIND_POLL_INTERVAL_MS = 2_000;
+export const TELEGRAM_BIND_TIMEOUT_MS = 15 * 60 * 1000;

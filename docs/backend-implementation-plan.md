@@ -50,8 +50,8 @@ TTL-cron** и минимум тестов (§15) закрыты.
 | 11  | Telegram mock: bind/unbind, forgot/reset                                  | §11         | ✅     |
 | 12  | Rate limit convert/login + cron TTL uploads/results/orphans               | §13         | ✅     |
 
-**Не делаем в v1:** Redis, отдельный worker-сервис, живой Telegram Bot API, 2FA, антивирус, batch,
-горизонтальный scale (вариант A — [architecture.md](./architecture.md) §5.3).
+**Не делаем в v1:** Redis, отдельный worker-сервис, 2FA, антивирус, batch, горизонтальный scale
+(вариант A — [architecture.md](./architecture.md) §5.3).
 
 ---
 
@@ -293,7 +293,8 @@ GET completed отдаёт `download_url`, `expires_at`, `saved_to_profile: fals
 
 ## 11. Telegram mock и восстановление пароля
 
-**Зачем:** UC-04. Живой Bot API — вне v1 ([tech-stack.md](./tech-stack.md) §6).
+**Зачем:** UC-04. Живой бот — grammY + `TELEGRAM_BOT_TOKEN`. Без токена и в тестах — mock
+([tech-stack.md](./tech-stack.md) §6).
 
 | Шаг  | Действие                                                                                | Критерий готовности                                  | Статус |
 | ---- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------ |
@@ -486,7 +487,7 @@ orphans). Этап **I:** HTTP/unit минимума и Playwright (гость c
 - [x] Share: создать (гость и user), public GET, revoke → 410
 - [x] MIME по magic bytes; 1 файл; 10 МБ; таймаут движка 60 с
 - [x] Rate limits §7.6; cron TTL исходников/результатов/shares
-- [x] Telegram — mock; живой бот не требуется
+- [x] Telegram — grammY при токене; mock без токена и в тестах; в production mock выключен
 - [x] Ошибки API на английском в конверте `{ error: { code, message } }`
 - [x] Unit + HTTP-тесты минимума §15 зелёные — auth, jobs, signed download, share 410, rate limit,
       TTL; Playwright — гость convert, share, register → ключ в ЛК

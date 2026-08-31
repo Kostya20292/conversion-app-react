@@ -29,15 +29,16 @@ pnpm dev
 
 Копируйте `.env.example` в `.env`. Секреты только из env, файл `.env` в git не коммитится.
 
-| Переменная                 | Зачем                                                                               |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| `NODE_ENV`                 | `development` / `test` / `production`. В production TypeORM не делает `synchronize` |
-| `PORT`                     | Порт API, по умолчанию `3000`                                                       |
-| `DATABASE_URL`             | Локальный PostgreSQL, например `postgresql://localhost:5432/convertly`              |
-| `JWT_SECRET`               | Подпись cookie-сессии. В `.env` нужна длинная случайная строка                      |
-| `CORS_ORIGIN`              | Origin SPA, для Vite: `http://127.0.0.1:5173`                                       |
-| `STORAGE_ROOT`             | Корень файлов (`storage/`), не раздаётся статикой                                   |
-| `LIBREOFFICE_DOCKER_IMAGE` | Образ `soffice`, по умолчанию `convertly-libreoffice:local`                         |
+| Переменная                 | Зачем                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `NODE_ENV`                 | `development` / `test` / `production`. В production TypeORM не делает `synchronize`  |
+| `PORT`                     | Порт API, по умолчанию `3000`                                                        |
+| `DATABASE_URL`             | Локальный PostgreSQL, например `postgresql://localhost:5432/convertly`               |
+| `JWT_SECRET`               | Подпись cookie-сессии. В `.env` нужна длинная случайная строка                       |
+| `CORS_ORIGIN`              | Origin SPA, для Vite: `http://127.0.0.1:5173`                                        |
+| `STORAGE_ROOT`             | Корень файлов (`storage/`), не раздаётся статикой                                    |
+| `LIBREOFFICE_DOCKER_IMAGE` | Образ `soffice`, по умолчанию `convertly-libreoffice:local`                          |
+| `TELEGRAM_BOT_TOKEN`       | Токен бота от [@BotFather](https://t.me/BotFather). Пусто — mock без живого Telegram |
 
 Vitest (`NODE_ENV=test`) ходит в базу `convertly_test` на том же сервере; она создаётся сама.
 
@@ -58,6 +59,15 @@ pnpm libreoffice:build
 
 Если Docker выключен, `pnpm dev` всё равно стартует: JPG↔PNG работают, документы падают с
 `conversion_failed`. В CI образ собирается из `docker-compose.yml` (сервис `libreoffice`).
+
+## Telegram
+
+Восстановление пароля идёт через бота. Создайте бота у [@BotFather](https://t.me/BotFather) и
+пропишите `TELEGRAM_BOT_TOKEN` в `.env`. После `pnpm dev` в ЛК «Привязать Telegram» откроет
+`t.me/<бот>?start=bind_<token>` — в чате нажмите Start.
+
+Без токена и в тестах (`NODE_ENV=test`) остаётся mock: привязка подтверждается сразу, код сброса
+читается из inbox. В production mock-эндпоинты отдают `404`.
 
 ## Тесты
 

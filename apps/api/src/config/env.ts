@@ -12,6 +12,7 @@ export type AppEnv = {
   JWT_SECRET: string;
   CORS_ORIGIN: string;
   STORAGE_ROOT: string;
+  TELEGRAM_BOT_TOKEN: string;
 };
 
 export const findRepoRoot = (startDir = process.cwd()): string => {
@@ -69,6 +70,9 @@ export const validateEnv = (config: Record<string, unknown>): AppEnv => {
       ? config.STORAGE_ROOT.trim()
       : 'storage';
 
+  const telegramBotToken =
+    typeof config.TELEGRAM_BOT_TOKEN === 'string' ? config.TELEGRAM_BOT_TOKEN.trim() : '';
+
   return {
     NODE_ENV: nodeEnv,
     PORT: port,
@@ -76,6 +80,7 @@ export const validateEnv = (config: Record<string, unknown>): AppEnv => {
     JWT_SECRET: jwtSecret,
     CORS_ORIGIN: corsOrigin,
     STORAGE_ROOT: storageRoot,
+    TELEGRAM_BOT_TOKEN: telegramBotToken,
   };
 };
 

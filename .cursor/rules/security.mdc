@@ -9,9 +9,9 @@ Checklist for auth, upload, API, secrets, and sensitive data. Limits/TTL source 
 
 ## Secrets
 
-- Secrets from env only (`JWT_SECRET`, `DATABASE_URL`, …); never hardcode.
+- Secrets from env only (`JWT_SECRET`, `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, …); never hardcode.
 - Do not commit `.env`, keys, or `storage/` contents.
-- Do not log passwords, full API keys, file bodies, or JWTs.
+- Do not log passwords, full API keys, file bodies, JWTs, or Telegram bot tokens.
 
 ## Auth & access
 
@@ -56,4 +56,4 @@ Verify resource ownership (job, file, key) before sensitive operations.
 
 ## Out of scope v1
 
-Do not treat as required: 2FA, Redis rate-store, S3/CDN ACL, live Telegram Bot API, Solana/payments.
+Do not treat as required: 2FA, Redis rate-store, S3/CDN ACL, Solana/payments.

@@ -58,7 +58,7 @@
 | **Storage** | Локальные файлы по `job_id` / `file_id`; отдача только через API              |
 | **Engines** | JPG↔PNG (Sharp), DOCX↔PDF (LibreOffice headless в Docker)                     |
 
-Telegram — **mock-модуль** внутри API (без отдельного сервиса).
+Telegram — модуль внутри API: живой бот (grammY, long polling) при `TELEGRAM_BOT_TOKEN`, иначе mock.
 
 ---
 
@@ -147,7 +147,7 @@ apps/api/
 │   ├── storage/             # запись/чтение/удаление на диске (без path traversal)
 │   ├── worker/              # polling queued jobs → processing → engines
 │   ├── cleanup/             # @nestjs/schedule: TTL uploads/results/shares
-│   ├── telegram/            # mock: код сброса / bind (живой Bot API позже)
+│   ├── telegram/            # Bot API (grammY) + mock для тестов / dev без токена
 │   └── common/              # guards, throttler, pipes, signed download tokens
 ├── test/
 └── package.json
@@ -162,7 +162,7 @@ apps/api/
 | `storage`        | Работа с каталогами на диске (см. §3.3)                    |
 | `worker`         | Фоновая обработка очереди из PostgreSQL                    |
 | `cleanup`        | Удаление просроченных файлов и share-ссылок                |
-| `telegram`       | Эмуляция восстановления пароля и привязки                  |
+| `telegram`       | Привязка и код сброса: живой бот или mock                  |
 
 Публичные префиксы: `/api/auth/*` (cookie), `/api/v1/*` (API-ключ), плюс отдача файлов только через
 контролируемые download-эндпоинты.
@@ -306,9 +306,9 @@ API. До перехода на A: concurrency worker’а, rate limit, верт
 **Внутри одного процесса Nest:** HTTP + job worker + cron (без Redis, без отдельного
 worker-сервиса).
 
-**Не делаем в v1:** пакетная конвертация, отдельный object storage / CDN, живой Telegram Bot API,
-антивирус, 2FA, Docker Compose для PostgreSQL, горизонтальный автоскейл воркеров. Compose в v1 —
-только сборка образа LibreOffice.
+**Не делаем в v1:** пакетная конвертация, отдельный object storage / CDN, антивирус, 2FA, Docker
+Compose для PostgreSQL, горизонтальный автоскейл воркеров. Compose в v1 — только сборка образа
+LibreOffice.
 
 ---
 

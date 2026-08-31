@@ -423,8 +423,10 @@ trace.
 3. В профиле отображается статус «Привязан» + возможность отвязать (с предупреждением про
    восстановление пароля).
 
-**На этапе разработки:** Telegram эмулируется (без живого бота). Способ mock и переход на живой API
-— в [`tech-stack.md`](./tech-stack.md).
+**Привязка:** кнопка в ЛК открывает бота с deep-link `start=bind_<token>`. Бот подтверждает
+привязку. Без `TELEGRAM_BOT_TOKEN` и в тестах привязка эмулируется (mock).
+
+Способ mock и живой Bot API — в [`tech-stack.md`](./tech-stack.md).
 
 ---
 
@@ -623,7 +625,7 @@ curl "https://example.com/api/v1/jobs/job_01H..." \
 | Надёжность            | Идемпотентность download; периодическая очистка orphan-файлов и expired shares                                        |
 | Логирование           | Job id, user id, статусы, ошибки без PII файлов                                                                       |
 | Тесты                 | Unit на валидацию; e2e: convert одного файла, share link, API auth (инструменты — [`tech-stack.md`](./tech-stack.md)) |
-| Telegram              | На старте — эмуляция; живой бот позже (см. [`tech-stack.md`](./tech-stack.md))                                        |
+| Telegram              | grammY при `TELEGRAM_BOT_TOKEN`; mock без токена и в тестах ([`tech-stack.md`](./tech-stack.md))                      |
 
 ---
 
@@ -704,32 +706,32 @@ hero.
 
 ## 13. Зафиксированные решения
 
-| #   | Вопрос                     | Решение                                                                    |
-| --- | -------------------------- | -------------------------------------------------------------------------- |
-| 1   | Модель API                 | **Jobs + polling** (UI тоже через polling под капотом)                     |
-| 2   | Стек технологий            | NestJS + TypeORM + PostgreSQL; детали — [`tech-stack.md`](./tech-stack.md) |
-| 3   | Хранение файлов            | Локальное файловое хранилище (детали — [`tech-stack.md`](./tech-stack.md)) |
-| 4   | Язык                       | UI — **русский**; API errors — **английский**                              |
-| 5   | Название продукта          | **Convertly** (слоган: «конвертация файлов онлайн»)                        |
-| 6   | Telegram                   | Сначала эмуляция; живой бот позже (см. [`tech-stack.md`](./tech-stack.md)) |
-| 7   | Пароль на share-ссылку     | **Нет**; только token + TTL + отзыв                                        |
-| 8   | Пакетная конвертация       | **Вне scope v1**; только один файл за операцию                             |
-| 9   | Очередь jobs               | Статусы в PostgreSQL + воркер в процессе Nest (без Redis)                  |
-| 10  | LibreOffice                | Docker-образ headless; worker вызывает `soffice` через `docker run --rm`   |
-| 11  | Структура репо             | Monorepo + Turborepo: `apps/web` (React) + `apps/api` (NestJS)             |
-| 12  | ЛК URL                     | **`/account`**                                                             |
-| 13  | «Запомнить меня»           | Обязательный чекбокс: 30 суток / session cookie                            |
-| 14  | Смена email                | Разрешена (текущий пароль + уникальность)                                  |
-| 15  | StoredFile при save=off    | **Не создаётся**; только временный download/share                          |
-| 16  | Примеры API docs           | `curl` + JS `fetch`                                                        |
-| 17  | Правила пароля             | Мин. 8 символов, ≥1 буква и ≥1 цифра                                       |
-| 18  | Rate limit                 | Фиксированные числа из §7.6                                                |
-| 19  | Download URL               | Signed token TTL 15 мин; API download — по API-ключу                       |
-| 20  | TTL исходников             | Успех → удалить; иначе max **1 час** с upload                              |
-| 21  | Package manager            | **pnpm** (workspaces + Turborepo)                                          |
-| 22  | `save_conversions` default | **`false`** при регистрации                                                |
-| 23  | Polling job status         | Каждые **2 сек**, пока `queued` / `processing`                             |
-| 24  | PostgreSQL локально        | **Локальная установка** (не Docker Compose)                                |
+| #   | Вопрос                     | Решение                                                                            |
+| --- | -------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | Модель API                 | **Jobs + polling** (UI тоже через polling под капотом)                             |
+| 2   | Стек технологий            | NestJS + TypeORM + PostgreSQL; детали — [`tech-stack.md`](./tech-stack.md)         |
+| 3   | Хранение файлов            | Локальное файловое хранилище (детали — [`tech-stack.md`](./tech-stack.md))         |
+| 4   | Язык                       | UI — **русский**; API errors — **английский**                                      |
+| 5   | Название продукта          | **Convertly** (слоган: «конвертация файлов онлайн»)                                |
+| 6   | Telegram                   | grammY при токене; mock без токена и в тестах ([`tech-stack.md`](./tech-stack.md)) |
+| 7   | Пароль на share-ссылку     | **Нет**; только token + TTL + отзыв                                                |
+| 8   | Пакетная конвертация       | **Вне scope v1**; только один файл за операцию                                     |
+| 9   | Очередь jobs               | Статусы в PostgreSQL + воркер в процессе Nest (без Redis)                          |
+| 10  | LibreOffice                | Docker-образ headless; worker вызывает `soffice` через `docker run --rm`           |
+| 11  | Структура репо             | Monorepo + Turborepo: `apps/web` (React) + `apps/api` (NestJS)                     |
+| 12  | ЛК URL                     | **`/account`**                                                                     |
+| 13  | «Запомнить меня»           | Обязательный чекбокс: 30 суток / session cookie                                    |
+| 14  | Смена email                | Разрешена (текущий пароль + уникальность)                                          |
+| 15  | StoredFile при save=off    | **Не создаётся**; только временный download/share                                  |
+| 16  | Примеры API docs           | `curl` + JS `fetch`                                                                |
+| 17  | Правила пароля             | Мин. 8 символов, ≥1 буква и ≥1 цифра                                               |
+| 18  | Rate limit                 | Фиксированные числа из §7.6                                                        |
+| 19  | Download URL               | Signed token TTL 15 мин; API download — по API-ключу                               |
+| 20  | TTL исходников             | Успех → удалить; иначе max **1 час** с upload                                      |
+| 21  | Package manager            | **pnpm** (workspaces + Turborepo)                                                  |
+| 22  | `save_conversions` default | **`false`** при регистрации                                                        |
+| 23  | Polling job status         | Каждые **2 сек**, пока `queued` / `processing`                                     |
+| 24  | PostgreSQL локально        | **Локальная установка** (не Docker Compose)                                        |
 
 Открытых решений нет — см. также [`tech-stack.md`](./tech-stack.md).
 

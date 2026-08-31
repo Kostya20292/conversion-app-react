@@ -46,6 +46,7 @@ export default defineConfig({
         CORS_ORIGIN: 'http://127.0.0.1:5173',
         LIBREOFFICE_DOCKER_IMAGE:
           process.env.LIBREOFFICE_DOCKER_IMAGE ?? 'convertly-libreoffice:local',
+        TELEGRAM_BOT_TOKEN: '',
       },
     },
     {

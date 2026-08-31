@@ -8,12 +8,17 @@ import { ApiException } from '@/common/errors/api-exception';
 import { isPostgresUniqueViolation } from '@/common/is-postgres-unique-violation';
 import type { AppEnv } from '@/config/env';
 import { User } from '@/users/user.entity';
+import { toBindStartParam } from './bind-start-param';
 import { TELEGRAM_BIND_TTL_MS } from './telegram.constants';
 import { TelegramBind } from './telegram-bind.entity';
 
-export type TelegramBindResponse = {
+export type TelegramBindTokens = {
   bind_token: string;
   start_param: string;
+};
+
+export type TelegramBindResponse = TelegramBindTokens & {
+  bot_username: string | null;
 };
 
 export type TelegramInboxResponse = {
@@ -32,7 +37,13 @@ export class TelegramService {
     private readonly config: ConfigService<AppEnv, true>,
   ) {}
 
-  async createBind(user: User): Promise<TelegramBindResponse> {
+  assertMockEnabled(): void {
+    if (this.config.get('NODE_ENV', { infer: true }) === 'production') {
+      throw new ApiException('not_found');
+    }
+  }
+
+  async createBind(user: User): Promise<TelegramBindTokens> {
     const bindToken = randomBytes(24).toString('hex');
     const expiresAt = new Date(Date.now() + TELEGRAM_BIND_TTL_MS);
     const existing = await this.binds.findOne({ where: { userId: user.id } });
@@ -51,7 +62,7 @@ export class TelegramService {
       );
     }
 
-    return { bind_token: bindToken, start_param: `bind_${bindToken}` };
+    return { bind_token: bindToken, start_param: toBindStartParam(bindToken) };
   }
 
   async confirmBind(bindToken: string, telegramId: string): Promise<void> {
@@ -106,9 +117,7 @@ export class TelegramService {
   }
 
   getInbox(telegramId: string): TelegramInboxResponse {
-    if (this.config.get('NODE_ENV', { infer: true }) === 'production') {
-      throw new ApiException('not_found');
-    }
+    this.assertMockEnabled();
 
     const code = this.inbox.get(telegramId);
     if (!code) {

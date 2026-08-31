@@ -1,4 +1,4 @@
-import { type ChangeEvent, type SubmitEvent, useRef, useState } from 'react';
+import { type ChangeEvent, type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMeRequest } from '@/api/auth';
 import { ApiRequestError, NetworkError } from '@/api/http';
@@ -9,6 +9,7 @@ import { Alert } from '@/components/Alert/Alert';
 import { Button } from '@/components/Button/Button';
 import { Input } from '@/components/Input/Input';
 import { Modal } from '@/components/Modal/Modal';
+import { pollTelegramBind } from '@/features/account/pollTelegramBind';
 import {
   ACCOUNT_PROFILE_FIELD_ORDER,
   type AccountProfileFormErrors,
@@ -16,6 +17,7 @@ import {
   validateAccountProfileForm,
 } from '@/features/account/validateAccountProfile';
 import { getFirstErrorField } from '@/lib/getFirstErrorField';
+import { telegramBindUrl } from '@/lib/telegramBindUrl';
 import { PASSWORD_HINT } from '@/lib/validatePassword';
 import type { AccountProfileSectionProps } from './AccountProfileSection.types';
 import styles from './AccountProfileSection.module.scss';
@@ -27,6 +29,10 @@ const FIELD_IDS = {
   newPassword: 'account-new-password',
   newPasswordConfirm: 'account-new-password-confirm',
 } as const;
+
+const isAbortError = (error: unknown): boolean =>
+  (error instanceof DOMException && error.name === 'AbortError') ||
+  (error instanceof Error && error.name === 'AbortError');
 
 export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) => {
   const navigate = useNavigate();
@@ -46,6 +52,8 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
   const [telegramError, setTelegramError] = useState<string | null>(null);
   const [isTelegramBusy, setIsTelegramBusy] = useState(false);
   const [isUnbindModalOpen, setIsUnbindModalOpen] = useState(false);
+  const [telegramBindUrlValue, setTelegramBindUrlValue] = useState<string | null>(null);
+  const telegramBindAbortRef = useRef<AbortController | null>(null);
   const displayNameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const currentPasswordRef = useRef<HTMLInputElement>(null);
@@ -59,6 +67,12 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
     newPassword: newPasswordRef,
     newPasswordConfirm: newPasswordConfirmRef,
   };
+
+  useEffect(() => {
+    return () => {
+      telegramBindAbortRef.current?.abort();
+    };
+  }, []);
 
   const getFormValues = (): AccountProfileFormValues => ({
     displayName,
@@ -183,25 +197,63 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
     })();
   };
 
+  const handleCancelTelegramBind = () => {
+    telegramBindAbortRef.current?.abort();
+    telegramBindAbortRef.current = null;
+    setTelegramBindUrlValue(null);
+    setIsTelegramBusy(false);
+  };
+
   const handleBindTelegram = () => {
     if (!user) {
       return;
     }
 
     void (async () => {
+      telegramBindAbortRef.current?.abort();
       setIsTelegramBusy(true);
       setTelegramError(null);
+      setTelegramBindUrlValue(null);
 
       try {
         const bind = await bindTelegramRequest();
-        await confirmTelegramRequest({
-          bindToken: bind.bind_token,
-          telegramId: user.id.replaceAll('-', '').slice(0, 32),
+        if (bind.bot_username === null || bind.bot_username.length === 0) {
+          await confirmTelegramRequest({
+            bindToken: bind.bind_token,
+            telegramId: user.id.replaceAll('-', '').slice(0, 32),
+          });
+          const updated = await getMeRequest();
+          applyUser(updated);
+          onNotify('Telegram привязан. Теперь можно восстановить пароль через бота.');
+          return;
+        }
+
+        const url = telegramBindUrl(bind.bot_username, bind.start_param);
+        setTelegramBindUrlValue(url);
+        window.open(url, '_blank', 'noopener,noreferrer');
+
+        const abort = new AbortController();
+        telegramBindAbortRef.current = abort;
+        const result = await pollTelegramBind({
+          getUser: () => getMeRequest({ signal: abort.signal }),
+          signal: abort.signal,
         });
-        const updated = await getMeRequest();
-        applyUser(updated);
+
+        if (!result.ok) {
+          setTelegramError(
+            'Не дождались подтверждения. Откройте бота и нажмите Start или запросите ссылку снова.',
+          );
+          return;
+        }
+
+        applyUser(result.user);
+        setTelegramBindUrlValue(null);
         onNotify('Telegram привязан. Теперь можно восстановить пароль через бота.');
       } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
         if (error instanceof ApiRequestError && error.code === 'internal_error') {
           return;
         }
@@ -339,7 +391,7 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
             {telegramError}
           </Alert>
         )}
-        {user?.telegramId ? (
+        {user?.telegramId && (
           <Button
             variant="danger"
             className={styles.telegramAction}
@@ -349,7 +401,30 @@ export const AccountProfileSection = ({ onNotify }: AccountProfileSectionProps) 
           >
             Отвязать Telegram
           </Button>
-        ) : (
+        )}
+        {!user?.telegramId && telegramBindUrlValue && (
+          <>
+            <p className={styles.metaText} aria-live="polite">
+              Откройте бота и нажмите Start. Статус обновится сам.
+            </p>
+            <a
+              className={styles.telegramLink}
+              href={telegramBindUrlValue}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Открыть Telegram-бота
+            </a>
+            <Button
+              variant="tertiary"
+              className={styles.telegramAction}
+              onClick={handleCancelTelegramBind}
+            >
+              Отмена
+            </Button>
+          </>
+        )}
+        {!user?.telegramId && !telegramBindUrlValue && (
           <Button
             variant="secondary"
             className={styles.telegramAction}

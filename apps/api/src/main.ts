@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { type AppEnv, parseCorsOrigins, resolveStorageRoot } from './config/env';
 import { ensureStorageDirectories } from './config/storage-dirs';
+import { TelegramBotService } from './telegram/telegram-bot.service';
 import { JobWorkerService } from './worker/job-worker.service';
 
 const bootstrap = async (): Promise<void> => {
@@ -18,6 +19,7 @@ const bootstrap = async (): Promise<void> => {
 
   await ensureStorageDirectories(resolveStorageRoot(config.get('STORAGE_ROOT', { infer: true })));
   app.get(JobWorkerService).start();
+  await app.get(TelegramBotService).start();
 
   await app.listen(config.get('PORT', { infer: true }), '127.0.0.1');
 };

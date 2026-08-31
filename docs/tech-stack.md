@@ -26,7 +26,7 @@
 | MIME (magic bytes) | file-type                                                |
 | Upload             | multer (через Nest)                                      |
 | Cron / TTL         | `@nestjs/schedule`                                       |
-| Telegram           | Mock-модуль (живой Bot API позже)                        |
+| Telegram           | grammY (long polling); без токена и в тестах — mock      |
 | Unit-тесты         | Vitest                                                   |
 | E2E                | Playwright                                               |
 | DX                 | **Oxlint** + **Turborepo** + **pnpm**                    |
@@ -91,9 +91,9 @@ PATH. PostgreSQL в этот Compose **не** входит.
 
 ## 6. Интеграции
 
-| Интеграция                                 | v1                                            | Позже            |
-| ------------------------------------------ | --------------------------------------------- | ---------------- |
-| Telegram (восстановление пароля, привязка) | Mock: эмуляция кода / bind без реального бота | Telegram Bot API |
+| Интеграция                                 | v1                                                                 | Позже |
+| ------------------------------------------ | ------------------------------------------------------------------ | ----- |
+| Telegram (восстановление пароля, привязка) | grammY + `TELEGRAM_BOT_TOKEN`; mock без токена и в `NODE_ENV=test` | —     |
 
 ---
 

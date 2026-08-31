@@ -277,8 +277,9 @@ Layout: mobile — одна колонка; desktop — настройки св�
 
 ## 10. Восстановление пароля
 
-**Зачем:** §4.4, UC-04. Живой Telegram Bot API — вне v1 ([tech-stack.md](./tech-stack.md) §6). Код
-сброса — бэкенд-этап **G** ([backend-implementation-plan.md](./backend-implementation-plan.md) §11).
+**Зачем:** §4.4, UC-04. Живой бот — grammY при токене; без токена ЛК остаётся на mock
+([tech-stack.md](./tech-stack.md) §6). Код сброса — бэкенд-этап **G**
+([backend-implementation-plan.md](./backend-implementation-plan.md) §11).
 
 | Шаг  | Страница           | Поведение                                       | Nest? | Статус |
 | ---- | ------------------ | ----------------------------------------------- | ----- | ------ |
@@ -381,7 +382,7 @@ convert, share, register → ключ в ЛК.
 - [x] Unit (файл, пароль)
 - [x] Playwright — фронт G
 - [x] Нет `X-API-Key` в localStorage; сессия только cookie
-- [x] Вне scope не реализовано: batch, светлая тема, живой Telegram Bot, 2FA
+- [x] Вне scope не реализовано: batch, светлая тема, 2FA
 
 ---
 

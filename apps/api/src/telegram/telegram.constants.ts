@@ -1,3 +1,4 @@
+export const TELEGRAM_BIND_PREFIX = 'bind_';
 export const TELEGRAM_BIND_TTL_MS = 15 * 60 * 1000;
 export const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
 export const FORGOT_PASSWORD_COOLDOWN_MS = 60 * 1000;

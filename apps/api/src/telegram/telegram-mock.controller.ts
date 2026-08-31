@@ -9,6 +9,7 @@ export class TelegramMockController {
   @Post('confirm')
   @HttpCode(HttpStatus.NO_CONTENT)
   async confirm(@Body() dto: ConfirmTelegramDto): Promise<void> {
+    this.telegramService.assertMockEnabled();
     await this.telegramService.confirmBind(dto.bind_token, dto.telegram_id);
   }
 

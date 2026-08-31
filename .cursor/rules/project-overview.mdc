@@ -38,7 +38,7 @@ File conversion web service. Source of truth:
 
 ## Out of scope v1
 
-Batch conversion, Redis/BullMQ, S3/CDN, live Telegram Bot API, 2FA, Docker Compose for PostgreSQL, horizontal autoscaling — see [architecture](../../docs/architecture.md) §6 and [task](../../docs/technical-task.md) §1.
+Batch conversion, Redis/BullMQ, S3/CDN, 2FA, Docker Compose for PostgreSQL, horizontal autoscaling — see [architecture](../../docs/architecture.md) §6 and [task](../../docs/technical-task.md) §1.
 
 ## Code & DX
 

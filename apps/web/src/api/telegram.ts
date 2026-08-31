@@ -3,6 +3,7 @@ import { apiFetch, type ApiFetchOptions } from './http';
 export type TelegramBindResponse = {
   bind_token: string;
   start_param: string;
+  bot_username: string | null;
 };
 
 const TELEGRAM_NOTIFY = { sessionExpired: true } as const;
