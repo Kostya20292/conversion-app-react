@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
+import { applyCreatedAtIdCursor, paginateRows, resolveListLimit } from '@/common/cursor-page';
 import { MIME_BY_FORMAT } from '@/common/domain/file-mime';
 import { ApiException } from '@/common/errors/api-exception';
 import { resultFileName } from '@/common/result-file-name';
@@ -68,14 +69,24 @@ export class FilesService {
     return this.files.existsBy({ jobId });
   }
 
-  async listForOwner(userId: string, channel: FileDownloadChannel): Promise<FileListResponse> {
-    const files = await this.files.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+  async listForOwner(
+    userId: string,
+    channel: FileDownloadChannel,
+    query: { cursor?: string; limit?: number } = {},
+  ): Promise<FileListResponse> {
+    const limit = resolveListLimit(query.limit);
+    const qb = this.files
+      .createQueryBuilder('file')
+      .where('file.userId = :userId', { userId })
+      .orderBy('file.createdAt', 'DESC')
+      .addOrderBy('file.id', 'DESC')
+      .take(limit + 1);
+    applyCreatedAtIdCursor(qb, 'file', query.cursor);
+    const page = paginateRows(await qb.getMany(), limit);
 
     return {
-      files: files.map((file) => toFileListItem(file, this.downloadUrlFor(file.id, channel))),
+      files: page.items.map((file) => toFileListItem(file, this.downloadUrlFor(file.id, channel))),
+      next_cursor: page.nextCursor,
     };
   }
 

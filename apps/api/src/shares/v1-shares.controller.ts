@@ -7,10 +7,12 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type { AuthenticatedApiKey } from '@/common/api-key.authenticator';
 import { CurrentApiKey } from '@/common/current-api-key.decorator';
+import { CursorListQueryDto } from '@/common/dto/cursor-list-query.dto';
 import { ApiKeyGuard } from '@/common/guards/api-key.guard';
 import { CreateShareDto } from './dto/create-share.dto';
 import type { ShareCreatedResponse, ShareListResponse } from './share-response';
@@ -31,8 +33,11 @@ export class V1SharesController {
   }
 
   @Get()
-  async list(@CurrentApiKey() apiKey: AuthenticatedApiKey): Promise<ShareListResponse> {
-    return this.sharesService.listForOwner(apiKey.userId);
+  async list(
+    @CurrentApiKey() apiKey: AuthenticatedApiKey,
+    @Query() query: CursorListQueryDto,
+  ): Promise<ShareListResponse> {
+    return this.sharesService.listForOwner(apiKey.userId, query);
   }
 
   @Delete(':token')

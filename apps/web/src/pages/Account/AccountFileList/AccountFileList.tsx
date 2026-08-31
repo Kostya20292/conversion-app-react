@@ -10,7 +10,15 @@ const FILE_SOURCE_LABEL = {
   api: 'API',
 } as const;
 
-export const AccountFileList = ({ files, onDownload, onShare, onDelete }: AccountFileListProps) => (
+export const AccountFileList = ({
+  files,
+  hasMore,
+  isLoadingMore = false,
+  onDownload,
+  onShare,
+  onDelete,
+  onLoadMore,
+}: AccountFileListProps) => (
   <section className={styles.card} aria-labelledby="files-title">
     <h2 id="files-title" className={styles.sectionTitle}>
       Сохранённые файлы
@@ -24,32 +32,46 @@ export const AccountFileList = ({ files, onDownload, onShare, onDelete }: Accoun
         .
       </p>
     ) : (
-      <ul className={styles.list}>
-        {files.map((file) => (
-          <li key={file.id} className={styles.listItem}>
-            <div className={styles.listBody}>
-              <p className={styles.listName}>{file.name}</p>
-              <p className={styles.listMeta}>
-                <span>{file.format}</span>
-                <span>{formatFileSize(file.sizeBytes)}</span>
-                <span>{formatDateTime(file.createdAt)}</span>
-                <span>{FILE_SOURCE_LABEL[file.source]}</span>
-              </p>
-            </div>
-            <div className={styles.listActions}>
-              <Button variant="tertiary" onClick={() => onDownload(file)}>
-                Скачать
-              </Button>
-              <Button variant="tertiary" onClick={() => onShare(file)}>
-                Поделиться
-              </Button>
-              <Button variant="danger" onClick={() => onDelete(file)}>
-                Удалить
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <>
+        <ul className={styles.list}>
+          {files.map((file) => (
+            <li key={file.id} className={styles.listItem}>
+              <div className={styles.listBody}>
+                <p className={styles.listName}>{file.name}</p>
+                <p className={styles.listMeta}>
+                  <span>{file.format}</span>
+                  <span>{formatFileSize(file.sizeBytes)}</span>
+                  <span>{formatDateTime(file.createdAt)}</span>
+                  <span>{FILE_SOURCE_LABEL[file.source]}</span>
+                </p>
+              </div>
+              <div className={styles.listActions}>
+                <Button variant="tertiary" onClick={() => onDownload(file)}>
+                  Скачать
+                </Button>
+                <Button variant="tertiary" onClick={() => onShare(file)}>
+                  Поделиться
+                </Button>
+                <Button variant="danger" onClick={() => onDelete(file)}>
+                  Удалить
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {hasMore && (
+          <div className={styles.loadMore}>
+            <Button
+              variant="secondary"
+              onClick={onLoadMore}
+              disabled={isLoadingMore}
+              aria-busy={isLoadingMore}
+            >
+              Показать ещё
+            </Button>
+          </div>
+        )}
+      </>
     )}
   </section>
 );

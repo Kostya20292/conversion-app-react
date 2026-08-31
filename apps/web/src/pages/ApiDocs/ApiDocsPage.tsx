@@ -31,7 +31,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/v1/files',
     auth: 'X-API-Key',
-    purpose: 'Список файлов, сохранённых в профиле',
+    purpose: 'Список файлов в профиле (`cursor`, `limit`, по 20)',
   },
   {
     method: 'GET',
@@ -55,7 +55,7 @@ const ENDPOINTS = [
     method: 'GET',
     path: '/api/v1/shares',
     auth: 'X-API-Key',
-    purpose: 'Список активных ссылок владельца',
+    purpose: 'Список активных ссылок (`cursor`, `limit`, по 20)',
   },
   {
     method: 'DELETE',

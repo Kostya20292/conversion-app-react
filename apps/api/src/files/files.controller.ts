@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '@/common/current-user.decorator';
+import { CursorListQueryDto } from '@/common/dto/cursor-list-query.dto';
 import { CookieAuthGuard } from '@/common/guards/cookie-auth.guard';
 import { OptionalCookieAuthGuard } from '@/common/guards/optional-cookie-auth.guard';
 import { OptionalAuthUser } from '@/common/optional-auth-user.decorator';
@@ -24,8 +25,11 @@ export class FilesController {
 
   @Get()
   @UseGuards(CookieAuthGuard)
-  async list(@CurrentUser() user: User): Promise<FileListResponse> {
-    return this.filesService.listForOwner(user.id, 'ui');
+  async list(
+    @CurrentUser() user: User,
+    @Query() query: CursorListQueryDto,
+  ): Promise<FileListResponse> {
+    return this.filesService.listForOwner(user.id, 'ui', query);
   }
 
   @Get(':id/download')

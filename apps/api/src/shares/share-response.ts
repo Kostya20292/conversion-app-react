@@ -27,6 +27,7 @@ export type ShareListItem = {
 
 export type ShareListResponse = {
   shares: ShareListItem[];
+  next_cursor: string | null;
 };
 
 export type ShareDownload = {

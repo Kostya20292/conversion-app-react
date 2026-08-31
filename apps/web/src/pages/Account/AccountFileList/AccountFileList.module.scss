@@ -57,13 +57,18 @@
   gap: var(--space-sm);
 }
 
+.loadMore {
+  margin-block-start: var(--space-md);
+}
+
 @container account (max-width: 30rem) {
   .listActions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .listActions :global(button) {
+  .listActions :global(button),
+  .loadMore :global(button) {
     width: 100%;
   }
 }

@@ -3,7 +3,14 @@ import { formatDateTime } from '@/lib/formatDateTime';
 import type { AccountShareListProps } from './AccountShareList.types';
 import styles from './AccountShareList.module.scss';
 
-export const AccountShareList = ({ shares, onCopy, onRevoke }: AccountShareListProps) => (
+export const AccountShareList = ({
+  shares,
+  hasMore,
+  isLoadingMore = false,
+  onCopy,
+  onRevoke,
+  onLoadMore,
+}: AccountShareListProps) => (
   <section className={styles.card} aria-labelledby="shares-title">
     <h2 id="shares-title" className={styles.sectionTitle}>
       Активные ссылки
@@ -11,27 +18,41 @@ export const AccountShareList = ({ shares, onCopy, onRevoke }: AccountShareListP
     {shares.length === 0 ? (
       <p className={styles.empty}>Активных ссылок нет. Поделитесь файлом после конвертации.</p>
     ) : (
-      <ul className={styles.list}>
-        {shares.map((share) => (
-          <li key={share.id} className={styles.listItem}>
-            <div className={styles.listBody}>
-              <p className={styles.listUrl}>{share.url}</p>
-              <p className={styles.listMeta}>
-                <span>{share.fileName}</span>
-                <span>до {formatDateTime(share.expiresAt)}</span>
-              </p>
-            </div>
-            <div className={styles.listActions}>
-              <Button variant="tertiary" onClick={() => onCopy(share)}>
-                Копировать
-              </Button>
-              <Button variant="danger" onClick={() => onRevoke(share)}>
-                Отозвать
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <>
+        <ul className={styles.list}>
+          {shares.map((share) => (
+            <li key={share.id} className={styles.listItem}>
+              <div className={styles.listBody}>
+                <p className={styles.listUrl}>{share.url}</p>
+                <p className={styles.listMeta}>
+                  <span>{share.fileName}</span>
+                  <span>до {formatDateTime(share.expiresAt)}</span>
+                </p>
+              </div>
+              <div className={styles.listActions}>
+                <Button variant="tertiary" onClick={() => onCopy(share)}>
+                  Копировать
+                </Button>
+                <Button variant="danger" onClick={() => onRevoke(share)}>
+                  Отозвать
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {hasMore && (
+          <div className={styles.loadMore}>
+            <Button
+              variant="secondary"
+              onClick={onLoadMore}
+              disabled={isLoadingMore}
+              aria-busy={isLoadingMore}
+            >
+              Показать ещё
+            </Button>
+          </div>
+        )}
+      </>
     )}
   </section>
 );

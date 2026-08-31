@@ -80,6 +80,7 @@ export type StoredFileDto = {
 
 export type StoredFileListDto = {
   files: StoredFileDto[];
+  next_cursor: string | null;
 };
 
 export type ShareListItemDto = {
@@ -91,4 +92,5 @@ export type ShareListItemDto = {
 
 export type ShareListDto = {
   shares: ShareListItemDto[];
+  next_cursor: string | null;
 };

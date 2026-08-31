@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
+import { applyCreatedAtIdCursor, paginateRows, resolveListLimit } from '@/common/cursor-page';
 import { MIME_BY_FORMAT } from '@/common/domain/file-mime';
 import { ApiException } from '@/common/errors/api-exception';
 import { isPostgresUniqueViolation } from '@/common/is-postgres-unique-violation';
@@ -66,18 +67,28 @@ export class SharesService {
     });
   }
 
-  async listForOwner(ownerUserId: string): Promise<ShareListResponse> {
-    const shares = await this.shares.find({
-      where: {
-        ownerUserId,
-        revokedAt: IsNull(),
-        expiresAt: MoreThan(new Date()),
-      },
-      relations: { job: true, file: true },
-      order: { createdAt: 'DESC' },
-    });
+  async listForOwner(
+    ownerUserId: string,
+    query: { cursor?: string; limit?: number } = {},
+  ): Promise<ShareListResponse> {
+    const limit = resolveListLimit(query.limit);
+    const qb = this.shares
+      .createQueryBuilder('share')
+      .leftJoinAndSelect('share.job', 'job')
+      .leftJoinAndSelect('share.file', 'file')
+      .where('share.ownerUserId = :ownerUserId', { ownerUserId })
+      .andWhere('share.revokedAt IS NULL')
+      .andWhere('share.expiresAt > :now', { now: new Date() })
+      .orderBy('share.createdAt', 'DESC')
+      .addOrderBy('share.id', 'DESC')
+      .take(limit + 1);
+    applyCreatedAtIdCursor(qb, 'share', query.cursor);
+    const page = paginateRows(await qb.getMany(), limit);
 
-    return { shares: shares.map(toShareListItem) };
+    return {
+      shares: page.items.map(toShareListItem),
+      next_cursor: page.nextCursor,
+    };
   }
 
   async revokeForOwner(token: string, ownerUserId: string): Promise<void> {

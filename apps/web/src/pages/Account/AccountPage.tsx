@@ -30,6 +30,10 @@ export const AccountPage = () => {
   const logout = useAuthStore((state) => state.logout);
   const [files, setFiles] = useState<StoredFile[]>([]);
   const [shares, setShares] = useState<ShareLinkItem[]>([]);
+  const [filesNextCursor, setFilesNextCursor] = useState<string | null>(null);
+  const [sharesNextCursor, setSharesNextCursor] = useState<string | null>(null);
+  const [isLoadingMoreFiles, setIsLoadingMoreFiles] = useState(false);
+  const [isLoadingMoreShares, setIsLoadingMoreShares] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<StoredFile | null>(null);
   const [shareToRevoke, setShareToRevoke] = useState<ShareLinkItem | null>(null);
@@ -68,12 +72,14 @@ export const AccountPage = () => {
 
     const loadLists = async () => {
       try {
-        const [nextFiles, nextShares] = await Promise.all([
+        const [filesPage, sharesPage] = await Promise.all([
           listFilesRequest({ signal: controller.signal }),
           listSharesRequest({ signal: controller.signal }),
         ]);
-        setFiles(nextFiles);
-        setShares(nextShares);
+        setFiles(filesPage.files);
+        setFilesNextCursor(filesPage.nextCursor);
+        setShares(sharesPage.shares);
+        setSharesNextCursor(sharesPage.nextCursor);
       } catch (error) {
         if (isAbortError(error)) {
           return;
@@ -120,8 +126,9 @@ export const AccountPage = () => {
     void (async () => {
       try {
         const created = await createShareRequest({ fileId: file.id });
-        const nextShares = await listSharesRequest();
-        setShares(nextShares);
+        const sharesPage = await listSharesRequest();
+        setShares(sharesPage.shares);
+        setSharesNextCursor(sharesPage.nextCursor);
         const copied = await copyToClipboard(toAbsoluteUrl(created.url));
         handleNotify(copied ? 'Ссылка скопирована' : 'Не удалось скопировать ссылку');
       } catch (error) {
@@ -154,6 +161,44 @@ export const AccountPage = () => {
     })();
   };
 
+  const handleLoadMoreFiles = () => {
+    if (filesNextCursor === null || isLoadingMoreFiles) {
+      return;
+    }
+
+    setIsLoadingMoreFiles(true);
+    void (async () => {
+      try {
+        const page = await listFilesRequest({ cursor: filesNextCursor });
+        setFiles((current) => [...current, ...page.files]);
+        setFilesNextCursor(page.nextCursor);
+      } catch (error) {
+        notifyCaught(error, 'Не удалось загрузить файлы.');
+      } finally {
+        setIsLoadingMoreFiles(false);
+      }
+    })();
+  };
+
+  const handleLoadMoreShares = () => {
+    if (sharesNextCursor === null || isLoadingMoreShares) {
+      return;
+    }
+
+    setIsLoadingMoreShares(true);
+    void (async () => {
+      try {
+        const page = await listSharesRequest({ cursor: sharesNextCursor });
+        setShares((current) => [...current, ...page.shares]);
+        setSharesNextCursor(page.nextCursor);
+      } catch (error) {
+        notifyCaught(error, 'Не удалось загрузить ссылки.');
+      } finally {
+        setIsLoadingMoreShares(false);
+      }
+    })();
+  };
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
@@ -178,8 +223,9 @@ export const AccountPage = () => {
       try {
         await deleteFileRequest(file.id);
         setFiles((current) => current.filter((item) => item.id !== file.id));
-        const nextShares = await listSharesRequest();
-        setShares(nextShares);
+        const sharesPage = await listSharesRequest();
+        setShares(sharesPage.shares);
+        setSharesNextCursor(sharesPage.nextCursor);
         handleNotify('Файл удалён');
       } catch (error) {
         notifyCaught(error, 'Не удалось удалить файл. Попробуйте ещё раз.');
@@ -236,14 +282,20 @@ export const AccountPage = () => {
         <div className={styles.lists}>
           <AccountFileList
             files={files}
+            hasMore={filesNextCursor !== null}
+            isLoadingMore={isLoadingMoreFiles}
             onDownload={handleDownloadFile}
             onShare={handleShareFile}
             onDelete={setFileToDelete}
+            onLoadMore={handleLoadMoreFiles}
           />
           <AccountShareList
             shares={shares}
+            hasMore={sharesNextCursor !== null}
+            isLoadingMore={isLoadingMoreShares}
             onCopy={(share) => void handleCopyShare(share)}
             onRevoke={setShareToRevoke}
+            onLoadMore={handleLoadMoreShares}
           />
         </div>
       </div>

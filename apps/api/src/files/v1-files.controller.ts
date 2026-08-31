@@ -6,11 +6,13 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Query,
   StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import type { AuthenticatedApiKey } from '@/common/api-key.authenticator';
 import { CurrentApiKey } from '@/common/current-api-key.decorator';
+import { CursorListQueryDto } from '@/common/dto/cursor-list-query.dto';
 import { ApiKeyGuard } from '@/common/guards/api-key.guard';
 import { toFileStream, type FileListResponse } from './file-response';
 import { FilesService } from './files.service';
@@ -21,8 +23,11 @@ export class V1FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Get()
-  async list(@CurrentApiKey() apiKey: AuthenticatedApiKey): Promise<FileListResponse> {
-    return this.filesService.listForOwner(apiKey.userId, 'api');
+  async list(
+    @CurrentApiKey() apiKey: AuthenticatedApiKey,
+    @Query() query: CursorListQueryDto,
+  ): Promise<FileListResponse> {
+    return this.filesService.listForOwner(apiKey.userId, 'api', query);
   }
 
   @Get(':id/download')

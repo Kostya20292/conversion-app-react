@@ -17,6 +17,7 @@ export type FileListItem = {
 
 export type FileListResponse = {
   files: FileListItem[];
+  next_cursor: string | null;
 };
 
 export type FileDownload = {

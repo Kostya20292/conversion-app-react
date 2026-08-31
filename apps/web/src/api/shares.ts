@@ -47,16 +47,28 @@ export const createShareRequest = async (
   });
 };
 
+export type ShareListPage = {
+  shares: ShareLinkItem[];
+  nextCursor: string | null;
+};
+
 export const listSharesRequest = async (
-  options?: Pick<ApiFetchOptions, 'signal'>,
-): Promise<ShareLinkItem[]> => {
-  const dto = await apiFetch<ShareListDto>('/api/shares', {
+  options?: Pick<ApiFetchOptions, 'signal'> & { cursor?: string },
+): Promise<ShareListPage> => {
+  const path =
+    options?.cursor !== undefined && options.cursor.length > 0
+      ? `/api/shares?cursor=${encodeURIComponent(options.cursor)}`
+      : '/api/shares';
+  const dto = await apiFetch<ShareListDto>(path, {
     errorContext: 'account',
     notify: { sessionExpired: true },
     signal: options?.signal,
   });
 
-  return dto.shares.map(toShareLinkItem);
+  return {
+    shares: dto.shares.map(toShareLinkItem),
+    nextCursor: dto.next_cursor,
+  };
 };
 
 export const revokeShareRequest = async (

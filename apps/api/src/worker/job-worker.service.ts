@@ -148,7 +148,7 @@ export class JobWorkerService implements OnModuleDestroy {
   }
 
   private async runEngine(job: ConversionJob): Promise<void> {
-    this.logger.log(`job ${job.id} processing`);
+    this.logger.log(formatJobLog(job, 'processing'));
 
     try {
       const source = await this.storage.read(job.sourceStorageKey);
@@ -174,7 +174,7 @@ export class JobWorkerService implements OnModuleDestroy {
       await this.jobs.save(latest);
       await this.files.saveFromCompletedJob(latest, bytes);
       await this.storage.delete(job.sourceStorageKey).catch(() => undefined);
-      this.logger.log(`job ${job.id} completed`);
+      this.logger.log(formatJobLog(latest, 'completed'));
     } catch (error: unknown) {
       const latest = await this.jobs.findOneBy({ id: job.id });
       if (latest?.status !== 'processing') {
@@ -186,10 +186,13 @@ export class JobWorkerService implements OnModuleDestroy {
       latest.errorCode = code;
       latest.finishedAt = new Date();
       await this.jobs.save(latest);
-      this.logger.error(`job ${job.id} failed ${code}`);
+      this.logger.error(formatJobLog(latest, `failed ${code}`));
     }
   }
 }
+
+const formatJobLog = (job: Pick<ConversionJob, 'id' | 'userId'>, status: string): string =>
+  `job ${job.id} user ${job.userId ?? 'guest'} ${status}`;
 
 const toJobErrorCode = (error: unknown): ApiErrorCode => {
   if (

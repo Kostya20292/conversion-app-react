@@ -7,9 +7,11 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '@/common/current-user.decorator';
+import { CursorListQueryDto } from '@/common/dto/cursor-list-query.dto';
 import { CookieAuthGuard } from '@/common/guards/cookie-auth.guard';
 import { OptionalCookieAuthGuard } from '@/common/guards/optional-cookie-auth.guard';
 import { OptionalAuthUser } from '@/common/optional-auth-user.decorator';
@@ -34,8 +36,11 @@ export class SharesController {
 
   @Get()
   @UseGuards(CookieAuthGuard)
-  async list(@CurrentUser() user: User): Promise<ShareListResponse> {
-    return this.sharesService.listForOwner(user.id);
+  async list(
+    @CurrentUser() user: User,
+    @Query() query: CursorListQueryDto,
+  ): Promise<ShareListResponse> {
+    return this.sharesService.listForOwner(user.id, query);
   }
 
   @Delete(':token')
