@@ -5,6 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
 const webRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(webRoot, '../..');
 const isCI = Boolean(process.env.CI);
+const e2eApiOrigin = 'http://127.0.0.1:3001';
+const e2eWebOrigin = 'http://127.0.0.1:5174';
 
 export default defineConfig({
   testDir: './e2e',
@@ -15,7 +17,7 @@ export default defineConfig({
   reporter: 'list',
   timeout: 30_000,
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: e2eWebOrigin,
     trace: 'on-first-retry',
   },
   projects: [
@@ -34,7 +36,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @convertly/api start',
       cwd: repoRoot,
-      url: 'http://127.0.0.1:3000/api/health',
+      url: `${e2eApiOrigin}/api/health`,
       reuseExistingServer: !isCI,
       timeout: 120_000,
       stdout: 'pipe',
@@ -42,20 +44,24 @@ export default defineConfig({
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        PORT: '3000',
-        CORS_ORIGIN: 'http://127.0.0.1:5173',
+        PORT: '3001',
+        CORS_ORIGIN: e2eWebOrigin,
         LIBREOFFICE_DOCKER_IMAGE:
           process.env.LIBREOFFICE_DOCKER_IMAGE ?? 'convertly-libreoffice:local',
         TELEGRAM_BOT_TOKEN: '',
       },
     },
     {
-      command: 'pnpm exec vite --host 127.0.0.1 --port 5173 --strictPort',
-      url: 'http://127.0.0.1:5173',
+      command: 'pnpm exec vite --host 127.0.0.1 --port 5174 --strictPort',
+      url: e2eWebOrigin,
       reuseExistingServer: !isCI,
       timeout: 120_000,
       stdout: 'pipe',
       stderr: 'pipe',
+      env: {
+        ...process.env,
+        API_PROXY_TARGET: e2eApiOrigin,
+      },
     },
   ],
 });

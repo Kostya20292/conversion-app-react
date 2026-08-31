@@ -75,10 +75,11 @@ pnpm libreoffice:build
 
 ```bash
 pnpm test          # unit: web (Vitest) + api (Vitest HTTP)
-pnpm test:e2e      # Playwright: SPA + Nest на :5173 / :3000
+pnpm test:e2e      # Playwright: SPA + Nest на :5174 / :3001 (не путать с pnpm dev)
 pnpm lint
 pnpm format:check
 ```
 
-E2E поднимает API и Vite сами (`apps/web/playwright.config.ts`). Локально можно
-`reuseExistingServer`, если `pnpm dev` уже запущен.
+E2E поднимает API и Vite сами на `:3001` / `:5174` (`apps/web/playwright.config.ts`), чтобы не
+пересечься с `pnpm dev` (`:3000` / `:5173`) и живым Telegram-ботом. Локально повторный прогон может
+переиспользовать уже поднятые e2e-серверы.

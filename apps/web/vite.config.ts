@@ -5,6 +5,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import babel from '@rolldown/plugin-babel';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const apiProxyTarget = process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:3000';
 
 export default defineConfig({
   plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
@@ -14,7 +15,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: apiProxyTarget,
         changeOrigin: true,
         bypass: (req) => (req.url?.startsWith('/api-docs') ? req.url : undefined),
       },
