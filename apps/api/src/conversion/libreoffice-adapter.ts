@@ -1,7 +1,7 @@
 import { execFile as execFileCallback } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,8 +13,8 @@ import { ENGINE_TIMEOUT_MS } from './engine-timeout';
 
 const execFile = promisify(execFileCallback);
 const LIBREOFFICE_BINARIES = ['soffice', 'libreoffice'] as const;
-const CONTAINER_WORK_DIR = '/work';
-const CONTAINER_PROFILE_URI = 'file:///work/profile';
+const CONTAINER_INPUT_DIR = '/tmp';
+const DOCKER_EXEC_TIMEOUT_MS = 15_000;
 
 export const DEFAULT_LIBREOFFICE_DOCKER_IMAGE = 'convertly-libreoffice:local';
 
@@ -42,6 +42,8 @@ export const convertWithLibreOffice = async (
     throw new ApiException('conversion_failed');
   }
 
+  logAdapter(logger, `LibreOffice engine=${describeEngine(engine)}`);
+
   const workDir = await createLibreOfficeWorkDir();
   await chmod(workDir, 0o777);
   const inputPath = path.join(workDir, `source.${sourceFormat}`);
@@ -51,19 +53,36 @@ export const convertWithLibreOffice = async (
   try {
     await writeFile(inputPath, bytes);
     await chmod(inputPath, 0o666);
+
     if (engine.kind === 'docker') {
       try {
-        await runInDocker(engine, workDir, containerName, sourceFormat, targetFormat);
+        await runInDocker(engine, inputPath, outputPath, containerName, sourceFormat, targetFormat);
       } catch (dockerError: unknown) {
-        const hostBin = await resolveExecutable(LIBREOFFICE_BINARIES);
-        if (hostBin === null) {
+        const fellBack = await tryHostFallback(
+          logger,
+          workDir,
+          inputPath,
+          sourceFormat,
+          targetFormat,
+          formatExecError(dockerError),
+        );
+        if (!fellBack) {
           throw dockerError;
         }
+      }
 
-        logger.warn(
-          `LibreOffice Docker run failed, falling back to host: ${formatExecError(dockerError)}`,
+      if (!(await outputFileReady(outputPath))) {
+        const fellBack = await tryHostFallback(
+          logger,
+          workDir,
+          inputPath,
+          sourceFormat,
+          targetFormat,
+          'Docker produced no output file',
         );
-        await runOnHost(hostBin, workDir, inputPath, sourceFormat, targetFormat);
+        if (!fellBack) {
+          throw new ApiException('conversion_failed');
+        }
       }
     } else {
       await runOnHost(engine.bin, workDir, inputPath, sourceFormat, targetFormat);
@@ -122,39 +141,57 @@ const resolveLibreOfficeEngine = async (logger: Logger): Promise<LibreOfficeEngi
 
 const runInDocker = async (
   engine: Extract<LibreOfficeEngine, { kind: 'docker' }>,
-  workDir: string,
+  inputPath: string,
+  outputPath: string,
   containerName: string,
   sourceFormat: OfficeFormat,
   targetFormat: OfficeFormat,
 ): Promise<void> => {
-  const containerInput = `${CONTAINER_WORK_DIR}/source.${sourceFormat}`;
-  await execFile(
+  const containerInput = `${CONTAINER_INPUT_DIR}/source.${sourceFormat}`;
+  const containerOutput = `${CONTAINER_INPUT_DIR}/source.${targetFormat}`;
+  const profileUri = `file://${CONTAINER_INPUT_DIR}/lo-profile-${randomUUID()}`;
+
+  await execDocker(
     engine.dockerBin,
     [
-      'run',
-      '--rm',
-      '--init',
-      '--network=none',
+      'create',
       '--name',
       containerName,
+      '--init',
+      '--network=none',
+      '--shm-size',
+      '256m',
       '-e',
-      'HOME=/work',
+      'HOME=/tmp',
       '-e',
       'SAL_USE_VCLPLUGIN=svp',
-      '-v',
-      `${workDir}:${CONTAINER_WORK_DIR}`,
       engine.image,
       'soffice',
-      ...sofficeArgs(
-        containerInput,
-        CONTAINER_WORK_DIR,
-        CONTAINER_PROFILE_URI,
-        sourceFormat,
-        targetFormat,
-      ),
+      ...sofficeArgs(containerInput, CONTAINER_INPUT_DIR, profileUri, sourceFormat, targetFormat),
     ],
-    { timeout: ENGINE_TIMEOUT_MS, maxBuffer: 2 * 1024 * 1024 },
+    DOCKER_EXEC_TIMEOUT_MS,
   );
+
+  await execDocker(
+    engine.dockerBin,
+    ['cp', inputPath, `${containerName}:${containerInput}`],
+    DOCKER_EXEC_TIMEOUT_MS,
+  );
+
+  await execDocker(engine.dockerBin, ['start', '-a', containerName], ENGINE_TIMEOUT_MS);
+
+  try {
+    await execDocker(
+      engine.dockerBin,
+      ['cp', `${containerName}:${containerOutput}`, outputPath],
+      DOCKER_EXEC_TIMEOUT_MS,
+    );
+  } catch (copyError: unknown) {
+    const logs = await containerLogs(engine.dockerBin, containerName);
+    throw new Error(
+      `LibreOffice Docker produced no output file. ${formatExecError(copyError)}${logs}`,
+    );
+  }
 };
 
 const runOnHost = async (
@@ -167,7 +204,27 @@ const runOnHost = async (
   const profileUri = pathToFileURL(path.join(workDir, 'profile')).href;
   await execFile(bin, sofficeArgs(inputPath, workDir, profileUri, sourceFormat, targetFormat), {
     timeout: ENGINE_TIMEOUT_MS,
+    env: process.env,
   });
+};
+
+const tryHostFallback = async (
+  logger: Logger,
+  workDir: string,
+  inputPath: string,
+  sourceFormat: OfficeFormat,
+  targetFormat: OfficeFormat,
+  reason: string,
+): Promise<boolean> => {
+  const hostBin = await resolveExecutable(LIBREOFFICE_BINARIES);
+  if (hostBin === null) {
+    logAdapter(logger, `LibreOffice host fallback unavailable: ${reason}`);
+    return false;
+  }
+
+  logger.warn(`LibreOffice Docker failed, falling back to host (${hostBin}): ${reason}`);
+  await runOnHost(hostBin, workDir, inputPath, sourceFormat, targetFormat);
+  return true;
 };
 
 const sofficeArgs = (
@@ -199,6 +256,55 @@ const createLibreOfficeWorkDir = async (): Promise<string> => {
     return await mkdtemp(path.join(root, 'job-'));
   } catch {
     return mkdtemp(path.join(tmpdir(), 'convertly-lo-'));
+  }
+};
+
+const execDocker = async (
+  dockerBin: string,
+  args: readonly string[],
+  timeout: number,
+): Promise<{ stdout: string; stderr: string }> =>
+  execFile(dockerBin, [...args], {
+    timeout,
+    maxBuffer: 2 * 1024 * 1024,
+    env: process.env,
+  });
+
+const containerLogs = async (dockerBin: string, containerName: string): Promise<string> => {
+  try {
+    const { stdout, stderr } = await execDocker(
+      dockerBin,
+      ['logs', containerName],
+      DOCKER_EXEC_TIMEOUT_MS,
+    );
+    const parts = [stdout.trim(), stderr.trim()].filter((part) => part.length > 0);
+    return parts.length === 0 ? '' : `\n${parts.join('\n')}`;
+  } catch {
+    return '';
+  }
+};
+
+const outputFileReady = async (outputPath: string): Promise<boolean> => {
+  try {
+    const info = await stat(outputPath);
+    return info.isFile() && info.size > 0;
+  } catch {
+    return false;
+  }
+};
+
+const describeEngine = (engine: LibreOfficeEngine): string => {
+  if (engine.kind === 'docker') {
+    return `docker bin=${engine.dockerBin} image=${engine.image}`;
+  }
+
+  return `host bin=${engine.bin}`;
+};
+
+const logAdapter = (logger: Logger, message: string): void => {
+  logger.warn(message);
+  if (process.env.CI === 'true') {
+    process.stderr.write(`${message}\n`);
   }
 };
 
@@ -268,7 +374,7 @@ const resolveExecutable = async (
 
 const dockerImageExists = async (dockerBin: string, image: string): Promise<boolean> => {
   try {
-    await execFile(dockerBin, ['image', 'inspect', image], { timeout: 15_000 });
+    await execDocker(dockerBin, ['image', 'inspect', image], DOCKER_EXEC_TIMEOUT_MS);
     return true;
   } catch {
     return false;
@@ -277,7 +383,7 @@ const dockerImageExists = async (dockerBin: string, image: string): Promise<bool
 
 const removeContainer = async (dockerBin: string, containerName: string): Promise<void> => {
   try {
-    await execFile(dockerBin, ['rm', '-f', containerName], { timeout: 15_000 });
+    await execDocker(dockerBin, ['rm', '-f', containerName], DOCKER_EXEC_TIMEOUT_MS);
   } catch {
     return;
   }

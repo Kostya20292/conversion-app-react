@@ -2,7 +2,7 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
-    HOME=/work \
+    HOME=/tmp \
     SAL_USE_VCLPLUGIN=svp
 
 RUN apt-get update \
