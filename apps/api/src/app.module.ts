@@ -35,7 +35,7 @@ import { WorkerModule } from './worker/worker.module';
         ),
         autoLoadEntities: true,
         namingStrategy: new SnakeNamingStrategy(),
-        synchronize: config.get('NODE_ENV', { infer: true }) !== 'production',
+        synchronize: config.get('TYPEORM_SYNCHRONIZE', { infer: true }),
         logging: false,
       }),
     }),

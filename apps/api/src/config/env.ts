@@ -8,10 +8,13 @@ export type NodeEnv = (typeof NODE_ENVS)[number];
 export type AppEnv = {
   NODE_ENV: NodeEnv;
   PORT: number;
+  LISTEN_HOST: string;
   DATABASE_URL: string;
   JWT_SECRET: string;
   CORS_ORIGIN: string;
   STORAGE_ROOT: string;
+  WEB_DIST: string;
+  TYPEORM_SYNCHRONIZE: boolean;
   TELEGRAM_BOT_TOKEN: string;
 };
 
@@ -25,7 +28,7 @@ export const findRepoRoot = (startDir = process.cwd()): string => {
 
     const parent = path.dirname(dir);
     if (parent === dir) {
-      throw new Error('Could not find repository root (pnpm-workspace.yaml)');
+      return startDir;
     }
 
     dir = parent;
@@ -70,18 +73,37 @@ export const validateEnv = (config: Record<string, unknown>): AppEnv => {
       ? config.STORAGE_ROOT.trim()
       : 'storage';
 
+  const webDist = typeof config.WEB_DIST === 'string' ? config.WEB_DIST.trim() : '';
+
+  const listenHostRaw = typeof config.LISTEN_HOST === 'string' ? config.LISTEN_HOST.trim() : '';
+  const listenHost = listenHostRaw.length > 0 ? listenHostRaw : nodeEnv === 'production' ? '0.0.0.0' : '127.0.0.1';
+
+  const typeormSynchronize = nodeEnv !== 'production' || parseEnvFlag(config.TYPEORM_SYNCHRONIZE);
+
   const telegramBotToken =
     typeof config.TELEGRAM_BOT_TOKEN === 'string' ? config.TELEGRAM_BOT_TOKEN.trim() : '';
 
   return {
     NODE_ENV: nodeEnv,
     PORT: port,
+    LISTEN_HOST: listenHost,
     DATABASE_URL: databaseUrl,
     JWT_SECRET: jwtSecret,
     CORS_ORIGIN: corsOrigin,
     STORAGE_ROOT: storageRoot,
+    WEB_DIST: webDist,
+    TYPEORM_SYNCHRONIZE: typeormSynchronize,
     TELEGRAM_BOT_TOKEN: telegramBotToken,
   };
+};
+
+const parseEnvFlag = (value: unknown): boolean => {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'yes';
 };
 
 export const parseCorsOrigins = (corsOrigin: string): string[] =>
