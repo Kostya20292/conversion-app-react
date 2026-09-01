@@ -14,7 +14,7 @@ COPY apps ./apps
 RUN pnpm --filter @convertly/shared build \
   && pnpm --filter @convertly/api build \
   && pnpm --filter @convertly/web build \
-  && pnpm --filter @convertly/api --prod deploy /out/api
+  && pnpm --filter @convertly/api --prod deploy --legacy /out/api
 
 FROM node:22-bookworm-slim AS runner
 ENV DEBIAN_FRONTEND=noninteractive \
