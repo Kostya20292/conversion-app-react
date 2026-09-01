@@ -9,6 +9,7 @@ import {
 } from '@/api/auth';
 import { ApiRequestError } from '@/api/http';
 import { useConversionStore } from '@/features/conversion/conversionStore';
+import { clearSessionHint, hasSessionHint, setSessionHint } from '@/lib/sessionHint';
 import type { AuthUser } from '@/types/api';
 
 export type { AuthUser };
@@ -75,12 +76,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'loading',
   issuedApiKey: null,
   hydrateSession: async (signal) => {
+    if (!hasSessionHint()) {
+      if (signal?.aborted) {
+        return;
+      }
+
+      set(anonymousState);
+      return;
+    }
+
     try {
       const user = await getMeRequest({ signal });
       if (signal?.aborted) {
         return;
       }
 
+      setSessionHint();
       set({
         user,
         status: 'authenticated',
@@ -91,11 +102,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
+      clearSessionHint();
       set(anonymousState);
     }
   },
   login: async (input) => {
     const user = await loginRequest(input);
+    setSessionHint();
     set({
       user,
       status: 'authenticated',
@@ -105,6 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (input) => {
     const result = await registerRequest(input);
     persistIssuedApiKey(result.user.id, result.apiKey);
+    setSessionHint();
     set({ user: result.user, status: 'authenticated', issuedApiKey: result.apiKey });
   },
   rememberIssuedApiKey: (apiKey) => {
@@ -116,6 +130,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ issuedApiKey: apiKey });
   },
   applyUser: (user) => {
+    setSessionHint();
     set({ user, status: 'authenticated' });
   },
   logout: async () => {
@@ -127,10 +142,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
 
+    clearSessionHint();
     set(anonymousState);
     useConversionStore.getState().clearFile();
   },
   clearSession: () => {
+    clearSessionHint();
     set(anonymousState);
     useConversionStore.getState().clearFile();
   },
