@@ -1,9 +1,7 @@
 # syntax=docker/dockerfile:1
 
 FROM node:22.12-bookworm-slim AS base
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
+RUN npm install -g pnpm@11.5.2
 
 FROM base AS build
 WORKDIR /src
