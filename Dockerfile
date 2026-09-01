@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22.12-bookworm-slim AS base
+FROM node:22-bookworm-slim AS base
 RUN npm install -g pnpm@11.5.2
 
 FROM base AS build
@@ -17,7 +17,7 @@ RUN pnpm --filter @convertly/shared build \
   && pnpm --filter @convertly/web build \
   && pnpm --filter @convertly/api --prod deploy /out/api
 
-FROM node:22.12-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     HOME=/tmp \
