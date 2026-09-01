@@ -5,9 +5,10 @@ Monorepo конвертера файлов (JPG↔PNG, DOCX↔PDF).
 ## Структура
 
 ```
-apps/web   — React + Vite (SPA)
-apps/api   — NestJS
-docker/    — образ LibreOffice (headless)
+apps/web           — React + Vite (SPA)
+apps/api           — NestJS
+packages/          — общие типы и правила домена
+docker/            — образ LibreOffice (headless)
 docs/      — ТЗ, архитектура, стек
 ```
 

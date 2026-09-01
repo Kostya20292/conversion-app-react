@@ -1,15 +1,6 @@
-export type ApiErrorCode =
-  | 'invalid_request'
-  | 'unsupported_conversion'
-  | 'invalid_file_type'
-  | 'file_too_large'
-  | 'unauthorized'
-  | 'not_found'
-  | 'gone'
-  | 'conversion_failed'
-  | 'rate_limited'
-  | 'internal_error'
-  | 'conversion_timeout';
+import type { ApiErrorCode, FileFormat, JobStatus, RequestSource } from '@convertly/shared';
+
+export type { ApiErrorCode, JobStatus };
 
 export type ApiError = {
   code: ApiErrorCode;
@@ -19,9 +10,7 @@ export type ApiError = {
 export type ApiErrorContext =
   'login' | 'register' | 'session' | 'download' | 'share' | 'account' | 'reset';
 
-export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
-
-export type JobFileFormat = 'jpg' | 'png' | 'pdf' | 'docx';
+export type JobFileFormat = FileFormat;
 
 export type ConversionJob = {
   id: string;
@@ -74,7 +63,7 @@ export type StoredFileDto = {
   format: JobFileFormat;
   size_bytes: number;
   created_at: string;
-  source: 'ui' | 'api';
+  source: RequestSource;
   download_url: string;
 };
 

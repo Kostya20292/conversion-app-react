@@ -1,8 +1,9 @@
+import { MAX_FILE_SIZE_BYTES } from '@convertly/shared';
 import { isSupportedConversion } from '@/common/domain/conversion-pair';
 import { FILE_FORMATS, type FileFormat } from '@/common/domain/file-format';
 import { ApiException } from '@/common/errors/api-exception';
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = MAX_FILE_SIZE_BYTES;
 
 const FORMAT_BY_EXTENSION: Record<string, FileFormat> = {
   jpg: 'jpg',

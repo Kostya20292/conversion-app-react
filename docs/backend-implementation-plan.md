@@ -420,7 +420,7 @@ SPA-контракт (cookie), который ждёт
 | Тип         | Инструмент | Где                         | Минимальный набор v1                                                        | Статус |
 | ----------- | ---------- | --------------------------- | --------------------------------------------------------------------------- | ------ |
 | Unit        | Vitest     | `apps/api/src/**/*.test.ts` | Пароль; пары форматов; magic bytes; 10 МБ; hash API-ключа; signed token TTL | ✅     |
-| HTTP        | Vitest     | `apps/api/test/`            | register/login; guest POST job + GET status; API 401 без ключа; share 410   | ✅     |
+| HTTP        | Vitest     | `apps/api/tests/`           | register/login; guest POST job + GET status; API 401 без ключа; share 410   | ✅     |
 | E2E продукт | Playwright | `apps/web/e2e/`             | Гость convert; share open/download; register → ключ в ЛК                    | ✅     |
 
 Unit: пароль, пары, magic bytes, 10 МБ, hash ключа, JPG↔PNG движок, signed token TTL — есть. HTTP:

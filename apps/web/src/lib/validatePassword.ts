@@ -1,4 +1,6 @@
-export const PASSWORD_MIN_LENGTH = 8;
+import { PASSWORD_MIN_LENGTH } from '@convertly/shared';
+
+export { PASSWORD_MIN_LENGTH };
 
 export const PASSWORD_HINT = `Не меньше ${PASSWORD_MIN_LENGTH} символов, буква и цифра`;
 

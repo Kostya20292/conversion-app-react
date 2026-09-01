@@ -69,7 +69,7 @@ conversion-app-react/
 ├── apps/web/          # React + Vite + SCSS Modules
 ├── apps/api/          # NestJS + TypeORM
 ├── docker/            # образ LibreOffice (headless)
-├── packages/          # общие типы / eslint (по мере надобности)
+├── packages/          # @convertly/shared — форматы, статусы, коды ошибок, лимиты
 ├── storage/           # локальные файлы (не в git)
 ├── docs/
 ├── docker-compose.yml # сборка образа LibreOffice (не PostgreSQL)
@@ -149,7 +149,7 @@ apps/api/
 │   ├── cleanup/             # @nestjs/schedule: TTL uploads/results/shares
 │   ├── telegram/            # Bot API (grammY) + mock для тестов / dev без токена
 │   └── common/              # guards, throttler, pipes, signed download tokens
-├── test/
+├── tests/
 └── package.json
 ```
 

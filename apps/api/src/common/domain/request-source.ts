@@ -1,3 +1,1 @@
-export const REQUEST_SOURCES = ['ui', 'api'] as const;
-
-export type RequestSource = (typeof REQUEST_SOURCES)[number];
+export { REQUEST_SOURCES, type RequestSource } from '@convertly/shared';

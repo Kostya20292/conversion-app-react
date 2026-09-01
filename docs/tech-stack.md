@@ -111,13 +111,13 @@ PATH. PostgreSQL в этот Compose **не** входит.
 
 **Выбор:** monorepo + **Turborepo** (вариант B).
 
-| Путь        | Содержимое                                                            |
-| ----------- | --------------------------------------------------------------------- |
-| `apps/web`  | React + Vite frontend                                                 |
-| `apps/api`  | NestJS backend                                                        |
-| `docker/`   | Dockerfile LibreOffice headless                                       |
-| `packages/` | Общие пакеты при необходимости (типы, eslint…)                        |
-| корень      | `pnpm-workspace.yaml`, `turbo.json`, `docker-compose.yml`, DX-скрипты |
+| Путь        | Содержимое                                                                       |
+| ----------- | -------------------------------------------------------------------------------- |
+| `apps/web`  | React + Vite frontend                                                            |
+| `apps/api`  | NestJS backend                                                                   |
+| `docker/`   | Dockerfile LibreOffice headless                                                  |
+| `packages/` | `@convertly/shared`: форматы, статусы джобы, коды ошибок, 10 МБ, политика пароля |
+| корень      | `pnpm-workspace.yaml`, `turbo.json`, `docker-compose.yml`, DX-скрипты            |
 
 Workspaces через **pnpm**. Turborepo оркестрирует `dev` / `build` / `lint` / `test` по приложениям с
 кэшем задач.

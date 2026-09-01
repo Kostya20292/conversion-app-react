@@ -22,7 +22,8 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "dependsOn": ["^build"]
     },
     "build": {
       "dependsOn": ["^build"],
@@ -32,6 +33,7 @@
       "dependsOn": ["^lint"]
     },
     "test": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "test:watch": {

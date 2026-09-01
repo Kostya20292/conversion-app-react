@@ -1,56 +1,15 @@
+import { ERROR_CODE_BY_HTTP_STATUS } from '@convertly/shared';
 import type { ApiErrorCode, ApiErrorContext } from '@/types/api';
 
-export const API_ERROR_CODES = [
-  'invalid_request',
-  'unsupported_conversion',
-  'invalid_file_type',
-  'file_too_large',
-  'unauthorized',
-  'not_found',
-  'gone',
-  'conversion_failed',
-  'rate_limited',
-  'internal_error',
-  'conversion_timeout',
-] as const satisfies readonly ApiErrorCode[];
-
-export const isApiErrorCode = (value: string): value is ApiErrorCode =>
-  (API_ERROR_CODES as readonly string[]).includes(value);
+export { API_ERROR_CODES, isApiErrorCode } from '@convertly/shared';
 
 export const apiErrorCodeFromStatus = (status: number): ApiErrorCode => {
-  if (status === 401 || status === 403) {
-    return 'unauthorized';
+  const mapped = ERROR_CODE_BY_HTTP_STATUS[status];
+  if (mapped) {
+    return mapped;
   }
 
-  if (status === 404) {
-    return 'not_found';
-  }
-
-  if (status === 410) {
-    return 'gone';
-  }
-
-  if (status === 413) {
-    return 'file_too_large';
-  }
-
-  if (status === 422) {
-    return 'conversion_failed';
-  }
-
-  if (status === 429) {
-    return 'rate_limited';
-  }
-
-  if (status === 504) {
-    return 'conversion_timeout';
-  }
-
-  if (status >= 500) {
-    return 'internal_error';
-  }
-
-  return 'invalid_request';
+  return status >= 500 ? 'internal_error' : 'invalid_request';
 };
 
 export type MapApiErrorInput = {

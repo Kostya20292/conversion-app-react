@@ -1,3 +1,1 @@
-export const FILE_FORMATS = ['jpg', 'png', 'pdf', 'docx'] as const;
-
-export type FileFormat = (typeof FILE_FORMATS)[number];
+export { FILE_FORMATS, isFileFormat, type FileFormat } from '@convertly/shared';

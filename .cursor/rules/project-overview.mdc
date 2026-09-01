@@ -18,7 +18,7 @@ File conversion web service. Source of truth:
 
 - Package manager: **pnpm only** (no npm/yarn). Details — [stack](../../docs/tech-stack.md) §8.
 - Apps: `apps/web` (React + Vite), `apps/api` (NestJS). Layout — [architecture](../../docs/architecture.md) §3.
-- Shared packages — in `packages/` as needed.
+- Shared domain — `packages/` (`@convertly/shared`): formats, job statuses, API error codes, 10 MB limit, password rule.
 - On-disk files — `storage/` (uploads/results/profile), **not in git**; client must not access it ([architecture](../../docs/architecture.md) §3.3).
 
 ## Conversion model
