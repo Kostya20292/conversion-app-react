@@ -8,10 +8,9 @@ WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
-COPY packages/package.json packages/tsconfig.json packages/
+COPY packages ./packages
 RUN pnpm install --frozen-lockfile
 COPY apps ./apps
-COPY packages ./packages
 RUN pnpm --filter @convertly/shared build \
   && pnpm --filter @convertly/api build \
   && pnpm --filter @convertly/web build \
